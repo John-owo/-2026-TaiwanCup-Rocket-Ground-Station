@@ -1,4 +1,4 @@
-# 🚀 2026 Taiwan Cup — PENTAX Rocket Ground Station
+# 🚀 2026 Taiwan Cup — Rocket Ground Station
 
 > **2026 台灣盃火箭競賽 — 地面站監控系統**
 
