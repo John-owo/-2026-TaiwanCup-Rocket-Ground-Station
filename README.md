@@ -302,10 +302,4 @@ cargo tauri build
 
 ## 📜 授權條款
 
-本專案為 2026 台灣盃火箭競賽 Pentax 隊內部使用。
-
----
-
-## 👥 團隊
-
-**Pentax Team** — 2026 Taiwan Cup Rocket Competition
+本專案為 2026 台灣盃火箭競賽 五限可能 內部使用。
