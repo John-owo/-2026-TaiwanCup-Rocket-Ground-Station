@@ -1,0 +1,44 @@
+use std::sync::{Arc, Mutex};
+use tokio_util::sync::CancellationToken;
+
+/// 序列埠監控的應用程式狀態
+/// 透過 Tauri managed state 在所有 command 間共享
+pub struct SerialState {
+    /// 序列埠路徑 (e.g., "COM3", "/dev/ttyUSB0")
+    pub path: Mutex<Option<String>>,
+    /// 鮑率
+    pub baud_rate: Mutex<Option<u32>>,
+    /// 取消令牌：用來控制接收迴圈的生命週期
+    pub cancellation_token: Mutex<Option<CancellationToken>>,
+    /// CRC 驗證失敗計數
+    pub verification_failed_count: Arc<Mutex<u32>>,
+    /// 總封包計數
+    pub total_packet_count: Arc<Mutex<u64>>,
+}
+
+impl SerialState {
+    pub fn new(path: String, baud_rate: u32) -> Self {
+        Self {
+            path: Mutex::new(Some(path)),
+            baud_rate: Mutex::new(Some(baud_rate)),
+            cancellation_token: Mutex::new(None),
+            verification_failed_count: Arc::new(Mutex::new(0)),
+            total_packet_count: Arc::new(Mutex::new(0)),
+        }
+    }
+}
+
+impl Default for SerialState {
+    fn default() -> Self {
+        Self {
+            path: Mutex::new(None),
+            baud_rate: Mutex::new(None),
+            cancellation_token: Mutex::new(None),
+            verification_failed_count: Arc::new(Mutex::new(0)),
+            total_packet_count: Arc::new(Mutex::new(0)),
+        }
+    }
+}
+
+/// 資料庫連線池包裝
+pub struct DbPool(pub sqlx::SqlitePool);

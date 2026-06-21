@@ -1,0 +1,11 @@
+# General
+*.vscode*
+*lock*
+*fuse*
+
+# Rust
+src-tauri/target
+
+# Node.js
+src-ui/dist
+src-ui/node_modules
