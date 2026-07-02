@@ -1,41 +1,52 @@
 <script lang="ts">
   import { store } from '@/lib/stores.svelte';
+  import {
+    integrateMpu6050Attitude,
+    mpu6050GyroRatesToDegrees,
+  } from '@/lib/attitude.js';
   import type { TelemetryPayload } from '@/lib/types';
 
   let telemetry: TelemetryPayload = $derived(store.telemetry);
+  let gyroRates = $derived(mpu6050GyroRatesToDegrees({
+    x: telemetry.xAngularVelocity,
+    y: telemetry.yAngularVelocity,
+    z: telemetry.zAngularVelocity,
+  }));
 
-  // 簡易積分：使用角速度推算姿態角
-  // 在實際應用中需要互補濾波或卡爾曼濾波
-  let pitch = $state(0);  // 俯仰角 (degrees)
-  let roll = $state(0);   // 翻滾角 (degrees)
-  let yaw = $state(0);    // 偏航角 (degrees)
-
-  // 使用 $effect 追蹤角速度變化，進行簡易積分
+  let pitch = $state(0);
+  let roll = $state(0);
+  let yaw = $state(0);
   let lastTime = $state(Date.now());
 
   $effect(() => {
     const now = Date.now();
-    const dt = Math.min((now - lastTime) / 1000, 0.1); // cap at 100ms
+    const dt = Math.min((now - lastTime) / 1000, 0.1);
     lastTime = now;
 
-    // 簡易積分（實際應用需要更好的 AHRS 算法）
-    pitch = Math.max(-90, Math.min(90, pitch + telemetry.yAngularVelocity * dt));
-    roll = ((roll + telemetry.xAngularVelocity * dt + 180) % 360) - 180;
-    yaw = ((yaw + telemetry.zAngularVelocity * dt) % 360 + 360) % 360;
+    const next = integrateMpu6050Attitude(
+      { roll, pitch, yaw },
+      {
+        x: telemetry.xAngularVelocity,
+        y: telemetry.yAngularVelocity,
+        z: telemetry.zAngularVelocity,
+      },
+      dt,
+    );
+
+    roll = next.roll;
+    pitch = next.pitch;
+    yaw = next.yaw;
   });
 
-  // Artificial Horizon calculations
   const AH_SIZE = 200;
   const AH_CENTER = AH_SIZE / 2;
   const AH_RADIUS = 85;
 
   let pitchOffset = $derived(Math.max(-AH_RADIUS, Math.min(AH_RADIUS, pitch * 1.5)));
-
   let rollRad = $derived((-roll - 90) * Math.PI / 180);
   let ptrX = $derived(AH_CENTER + Math.cos(rollRad) * (AH_RADIUS + 2));
   let ptrY = $derived(AH_CENTER + Math.sin(rollRad) * (AH_RADIUS + 2));
 
-  // Compass calculations
   const COMP_SIZE = 140;
   const COMP_CENTER = COMP_SIZE / 2;
   const COMP_RADIUS = 58;
@@ -62,11 +73,10 @@
 </script>
 
 <div class="attitude-container">
-  <!-- Artificial Horizon -->
   <div class="attitude-card">
     <div class="card-header">
-      <span class="header-label">人工地平儀</span>
-      <span class="header-value mono">{pitch.toFixed(1)}° / {roll.toFixed(1)}°</span>
+      <span class="header-label">ATTITUDE</span>
+      <span class="header-value mono">P {pitch.toFixed(1)} deg / R {roll.toFixed(1)} deg</span>
     </div>
     <div class="horizon-wrapper">
       <svg viewBox="0 0 {AH_SIZE} {AH_SIZE}" class="horizon-svg">
@@ -84,41 +94,33 @@
           </linearGradient>
         </defs>
 
-        <!-- Outer ring -->
         <circle cx={AH_CENTER} cy={AH_CENTER} r={AH_RADIUS + 4}
                 fill="none" stroke="var(--surface-lighter)" stroke-width="2"/>
         <circle cx={AH_CENTER} cy={AH_CENTER} r={AH_RADIUS}
                 fill="none" stroke="var(--glass-border)" stroke-width="1"/>
 
-        <!-- Sky + Ground with roll rotation -->
         <g clip-path="url(#ah-clip)" transform="rotate({-roll}, {AH_CENTER}, {AH_CENTER})">
-          <!-- Sky -->
           <rect x="0" y={-AH_SIZE} width={AH_SIZE} height={AH_SIZE + AH_CENTER + pitchOffset}
                 fill="url(#sky-grad)"/>
-          <!-- Ground -->
           <rect x="0" y={AH_CENTER + pitchOffset} width={AH_SIZE} height={AH_SIZE * 2}
                 fill="url(#ground-grad)"/>
-          <!-- Horizon line -->
           <line x1="0" y1={AH_CENTER + pitchOffset} x2={AH_SIZE} y2={AH_CENTER + pitchOffset}
                 stroke="#fff" stroke-width="1.5" opacity="0.8"/>
 
-          <!-- Pitch marks -->
           {#each [-40, -20, -10, 10, 20, 40] as deg}
             {@const markY = AH_CENTER + pitchOffset - deg * 1.5}
             <line x1={AH_CENTER - 20} y1={markY} x2={AH_CENTER + 20} y2={markY}
                   stroke="#fff" stroke-width="1" opacity="0.5"/>
-            <text x={AH_CENTER + 24} y={markY + 3} fill="#fff" font-size="8" opacity="0.6">{deg}°</text>
+            <text x={AH_CENTER + 24} y={markY + 3} fill="#fff" font-size="8" opacity="0.6">{deg} deg</text>
           {/each}
         </g>
 
-        <!-- Fixed aircraft symbol -->
         <line x1={AH_CENTER - 35} y1={AH_CENTER} x2={AH_CENTER - 12} y2={AH_CENTER}
               stroke="var(--accent-cyan)" stroke-width="2.5" stroke-linecap="round"/>
         <line x1={AH_CENTER + 12} y1={AH_CENTER} x2={AH_CENTER + 35} y2={AH_CENTER}
               stroke="var(--accent-cyan)" stroke-width="2.5" stroke-linecap="round"/>
         <circle cx={AH_CENTER} cy={AH_CENTER} r="3" fill="var(--accent-cyan)"/>
 
-        <!-- Roll indicator arc (top) -->
         {#each [-60, -45, -30, -20, -10, 0, 10, 20, 30, 45, 60] as deg}
           {@const rad = (deg - 90) * Math.PI / 180}
           {@const r1 = AH_RADIUS - 2}
@@ -133,17 +135,15 @@
           />
         {/each}
 
-        <!-- Roll pointer (triangle at current roll angle) -->
         <circle cx={ptrX} cy={ptrY} r="4" fill="var(--accent-cyan)"/>
       </svg>
     </div>
   </div>
 
-  <!-- Compass / Heading Indicator -->
   <div class="attitude-card">
     <div class="card-header">
-      <span class="header-label">航向指示器</span>
-      <span class="header-value mono">{yaw.toFixed(1)}°</span>
+      <span class="header-label">HEADING</span>
+      <span class="header-value mono">{yaw.toFixed(1)} deg</span>
     </div>
     <div class="compass-wrapper">
       <svg viewBox="0 0 {COMP_SIZE} {COMP_SIZE}" class="compass-svg">
@@ -154,13 +154,11 @@
           </radialGradient>
         </defs>
 
-        <!-- Background -->
         <circle cx={COMP_CENTER} cy={COMP_CENTER} r={COMP_RADIUS + 2}
                 fill="none" stroke="var(--surface-lighter)" stroke-width="1.5"/>
         <circle cx={COMP_CENTER} cy={COMP_CENTER} r={COMP_RADIUS}
                 fill="url(#comp-bg)"/>
 
-        <!-- Rotating compass rose -->
         <g transform="rotate({-yaw}, {COMP_CENTER}, {COMP_CENTER})">
           {#each compassMarks as mark}
             <line x1={mark.x1} y1={mark.y1} x2={mark.x2} y2={mark.y2}
@@ -176,36 +174,32 @@
           {/each}
         </g>
 
-        <!-- Fixed heading indicator (triangle at top) -->
         <polygon points="{COMP_CENTER},{COMP_CENTER - COMP_RADIUS - 8} {COMP_CENTER - 5},{COMP_CENTER - COMP_RADIUS + 2} {COMP_CENTER + 5},{COMP_CENTER - COMP_RADIUS + 2}"
                  fill="var(--accent-cyan)"/>
-
-        <!-- Center dot -->
         <circle cx={COMP_CENTER} cy={COMP_CENTER} r="3" fill="var(--accent-cyan)" opacity="0.6"/>
       </svg>
     </div>
   </div>
 
-  <!-- Angular velocity readout -->
   <div class="attitude-card angular-readout">
     <div class="card-header">
-      <span class="header-label">角速度</span>
+      <span class="header-label">GYRO RATE</span>
     </div>
     <div class="angular-values">
       <div class="angular-item">
         <span class="angular-label">PITCH</span>
-        <span class="angular-val mono">{telemetry.yAngularVelocity.toFixed(1)}</span>
-        <span class="angular-unit">°/s</span>
+        <span class="angular-val mono">{gyroRates.y.toFixed(1)}</span>
+        <span class="angular-unit">deg/s</span>
       </div>
       <div class="angular-item">
         <span class="angular-label">ROLL</span>
-        <span class="angular-val mono">{telemetry.xAngularVelocity.toFixed(1)}</span>
-        <span class="angular-unit">°/s</span>
+        <span class="angular-val mono">{gyroRates.x.toFixed(1)}</span>
+        <span class="angular-unit">deg/s</span>
       </div>
       <div class="angular-item">
         <span class="angular-label">YAW</span>
-        <span class="angular-val mono">{telemetry.zAngularVelocity.toFixed(1)}</span>
-        <span class="angular-unit">°/s</span>
+        <span class="angular-val mono">{gyroRates.z.toFixed(1)}</span>
+        <span class="angular-unit">deg/s</span>
       </div>
     </div>
   </div>
