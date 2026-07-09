@@ -6,6 +6,10 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "types": ["svelte", "vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "noEmit": true,
     /**
      * Typecheck JS in `.svelte` and `.js` files by default.

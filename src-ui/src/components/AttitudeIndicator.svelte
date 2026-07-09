@@ -70,9 +70,61 @@
       labelY: COMP_CENTER + Math.sin(rad) * (COMP_RADIUS - 24),
     };
   });
+
+  let rocketLeanX = $derived(Math.max(-26, Math.min(26, roll * 0.35)));
+  let rocketLeanY = $derived(Math.max(-20, Math.min(20, -pitch * 0.35)));
+  let rocketTransform = $derived(`translate(${110 + rocketLeanX} ${118 + rocketLeanY}) rotate(${roll})`);
+  let noseTransform = $derived(`rotate(${yaw}, 110, 118)`);
 </script>
 
 <div class="attitude-container">
+  <div class="attitude-card rocket-card">
+    <div class="card-header">
+      <span class="header-label">ROCKET ATTITUDE</span>
+      <span class="header-value mono">Y {yaw.toFixed(1)} deg</span>
+    </div>
+    <div class="rocket-wrapper">
+      <svg viewBox="0 0 220 220" class="rocket-svg">
+        <defs>
+          <radialGradient id="rocket-bg" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stop-color="var(--surface-light)" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="var(--surface)" stop-opacity="0.15"/>
+          </radialGradient>
+          <linearGradient id="rocket-body" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#f4fbff"/>
+            <stop offset="100%" stop-color="#7fbce8"/>
+          </linearGradient>
+        </defs>
+
+        <circle cx="110" cy="118" r="86" fill="url(#rocket-bg)" stroke="var(--glass-border)" stroke-width="1"/>
+        <circle cx="110" cy="118" r="58" fill="none" stroke="var(--surface-border)" stroke-width="1"/>
+        <line x1="24" y1="118" x2="196" y2="118" stroke="var(--surface-border)" stroke-width="1"/>
+        <line x1="110" y1="32" x2="110" y2="204" stroke="var(--surface-border)" stroke-width="1"/>
+
+        <g transform={noseTransform} opacity="0.55">
+          <path d="M110 34 L104 52 L116 52 Z" fill="var(--accent-cyan)"/>
+        </g>
+
+        <g transform={rocketTransform} class="rocket-model">
+          <path d="M0 -72 C-13 -55 -15 -32 -13 -8 L13 -8 C15 -32 13 -55 0 -72 Z"
+                fill="url(#rocket-body)" stroke="var(--accent-cyan)" stroke-width="1.4"/>
+          <rect x="-12" y="-8" width="24" height="66" rx="8"
+                fill="rgba(127,188,232,0.86)" stroke="var(--accent-cyan)" stroke-width="1.2"/>
+          <path d="M-12 34 L-34 63 L-10 54 Z" fill="var(--accent-cyan)" opacity="0.72"/>
+          <path d="M12 34 L34 63 L10 54 Z" fill="var(--accent-cyan)" opacity="0.72"/>
+          <path d="M-7 58 L0 76 L7 58 Z" fill="var(--accent-orange)" opacity="0.85"/>
+          <line x1="-8" y1="-38" x2="8" y2="-38" stroke="rgba(10,14,26,0.55)" stroke-width="2"/>
+          <line x1="-10" y1="8" x2="10" y2="8" stroke="rgba(10,14,26,0.45)" stroke-width="2"/>
+        </g>
+      </svg>
+    </div>
+    <div class="attitude-numbers">
+      <span class="mono">Pitch {pitch.toFixed(1)} deg</span>
+      <span class="mono">Roll {roll.toFixed(1)} deg</span>
+      <span class="mono">Yaw {yaw.toFixed(1)} deg</span>
+    </div>
+  </div>
+
   <div class="attitude-card">
     <div class="card-header">
       <span class="header-label">ATTITUDE</span>
@@ -224,6 +276,10 @@
     animation-delay: 300ms;
   }
 
+  .rocket-card {
+    animation-delay: 220ms;
+  }
+
   .card-header {
     display: flex;
     justify-content: space-between;
@@ -246,9 +302,29 @@
   }
 
   .horizon-wrapper,
-  .compass-wrapper {
+  .compass-wrapper,
+  .rocket-wrapper {
     display: flex;
     justify-content: center;
+  }
+
+  .rocket-svg {
+    width: 220px;
+    height: 220px;
+  }
+
+  .rocket-model {
+    filter: drop-shadow(0 0 12px var(--accent-cyan-glow));
+    transition: transform 120ms linear;
+  }
+
+  .attitude-numbers {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-1);
+    margin-top: var(--sp-3);
+    color: var(--text-secondary);
+    font-size: var(--fs-xs);
   }
 
   .horizon-svg {

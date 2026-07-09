@@ -61,6 +61,7 @@ impl Receiver for SerialReceiver {
         let total_count = self.total_packet_count.clone();
         let app_handle = self.app_handle.clone();
         let cancellation_token = self.cancellation_token.clone();
+        let mut altitude_baseline_m: Option<f32> = None;
 
         loop {
             tokio::select! {
@@ -87,7 +88,9 @@ impl Receiver for SerialReceiver {
 
                     match parser.sink(byte) {
                         ParseResult::Incomplete => {}
-                        ParseResult::Complete(payload) => {
+                        ParseResult::Complete(mut payload) => {
+                            let baseline = altitude_baseline_m.get_or_insert(payload.altitude);
+                            payload.altitude -= *baseline;
                             // 更新總封包計數
                             {
                                 let mut count = total_count.lock().unwrap();

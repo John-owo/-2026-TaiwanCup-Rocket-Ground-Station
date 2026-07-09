@@ -32,6 +32,7 @@ export async function setupEventListeners(
 
   const unlistenError = await listen<SerialError>('serial-error', (event) => {
     appStore.addError(event.payload);
+    appStore.setConnected(false);
   });
   unlisteners.push(unlistenError);
 

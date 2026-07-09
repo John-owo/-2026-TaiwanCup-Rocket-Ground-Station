@@ -10,8 +10,8 @@
   import StatusBar from '@/components/StatusBar.svelte';
 
   let connected = $derived(store.connected);
+  let packets = $derived(store.stats.totalPackets);
 
-  // Initialize Tauri event listeners when component mounts
   $effect(() => {
     let unlisteners: UnlistenFn[] = [];
 
@@ -26,11 +26,10 @@
 </script>
 
 <div class="app-layout">
-  <!-- ─── Top Bar ─────────────────────────────────────────────── -->
   <header class="top-bar">
     <div class="brand">
       <div class="logo">
-        <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true">
           <path d="M16 2L14 12L16 8L18 12L16 2Z" fill="var(--accent-cyan)" opacity="0.9"/>
           <path d="M16 8L12 24L16 20L20 24L16 8Z" fill="var(--accent-cyan)"/>
           <path d="M10 24L16 30L22 24L20 24L16 28L12 24Z" fill="var(--accent-cyan)" opacity="0.5"/>
@@ -38,11 +37,13 @@
         </svg>
       </div>
       <div class="brand-text">
-        <h1>PENTAX Ground Station</h1>
-        <span class="brand-sub">2026 TaiwanCup Rocket Monitoring</span>
+        <h1>五限可能 Ground Station</h1>
+        <span class="brand-sub">2026 TaiwanCup Rocket Monitoring · Relative Altitude</span>
       </div>
     </div>
+
     <div class="top-bar-right">
+      <div class="packet-chip mono">{packets.toLocaleString()} PKT</div>
       <div class="status-badge" class:online={connected}>
         <div class="badge-dot"></div>
         <span>{connected ? 'ONLINE' : 'OFFLINE'}</span>
@@ -50,30 +51,21 @@
     </div>
   </header>
 
-  <!-- ─── Main Content ────────────────────────────────────────── -->
   <div class="main-content">
-    <!-- Left Sidebar -->
     <aside class="sidebar-left">
       <ConnectionPanel />
     </aside>
 
-    <!-- Center Area -->
     <main class="center-area">
-      <section class="telemetry-section">
-        <TelemetryGrid />
-      </section>
-      <section class="charts-section">
-        <TelemetryCharts />
-      </section>
+      <TelemetryGrid />
+      <TelemetryCharts />
     </main>
 
-    <!-- Right Sidebar -->
     <aside class="sidebar-right">
       <AttitudeIndicator />
     </aside>
   </div>
 
-  <!-- ─── Status Bar ──────────────────────────────────────────── -->
   <StatusBar />
 </div>
 
@@ -88,7 +80,6 @@
     position: relative;
   }
 
-  /* Subtle animated scan line effect */
   .app-layout::before {
     content: '';
     position: absolute;
@@ -103,7 +94,6 @@
     opacity: 0.4;
   }
 
-  /* ─── Top Bar ───────────────────────────────────────── */
   .top-bar {
     display: flex;
     align-items: center;
@@ -128,15 +118,15 @@
   }
 
   .brand-text h1 {
+    color: var(--text-primary);
     font-size: var(--fs-md);
     font-weight: 700;
-    color: var(--text-primary);
     letter-spacing: 0.04em;
   }
 
   .brand-sub {
-    font-size: var(--fs-xs);
     color: var(--text-tertiary);
+    font-size: var(--fs-xs);
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
@@ -144,7 +134,15 @@
   .top-bar-right {
     display: flex;
     align-items: center;
-    gap: var(--sp-4);
+    gap: var(--sp-3);
+  }
+
+  .packet-chip {
+    padding: var(--sp-1) var(--sp-3);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-size: var(--fs-xs);
   }
 
   .status-badge {
@@ -155,13 +153,11 @@
     background: var(--accent-red-dim);
     border: 1px solid rgba(255, 59, 59, 0.2);
     border-radius: var(--radius-full);
+    color: var(--accent-red);
+    font-family: var(--font-mono);
     font-size: var(--fs-xs);
     font-weight: 600;
-    color: var(--accent-red);
-    text-transform: uppercase;
     letter-spacing: 0.08em;
-    font-family: var(--font-mono);
-    transition: all var(--transition-base);
   }
 
   .status-badge.online {
@@ -178,55 +174,40 @@
     animation: pulse 2s ease-in-out infinite;
   }
 
-  /* ─── Main Content ──────────────────────────────────── */
   .main-content {
     display: grid;
-    grid-template-columns: 260px 1fr 260px;
+    grid-template-columns: 260px minmax(0, 1fr) 300px;
     gap: var(--sp-4);
-    padding: var(--sp-4);
     flex: 1;
-    overflow: hidden;
     min-height: 0;
+    padding: var(--sp-4);
+    overflow: hidden;
   }
 
-  .sidebar-left {
+  .sidebar-left,
+  .sidebar-right,
+  .center-area {
+    min-height: 0;
     overflow-y: auto;
-    padding-right: var(--sp-1);
   }
 
   .center-area {
     display: flex;
     flex-direction: column;
     gap: var(--sp-4);
-    overflow-y: auto;
     padding: 0 var(--sp-1);
   }
 
-  .sidebar-right {
-    overflow-y: auto;
-    padding-left: var(--sp-1);
-  }
-
-  .telemetry-section,
-  .charts-section {
-    flex-shrink: 0;
-  }
-
-  /* ─── Responsive ────────────────────────────────────── */
-  @media (max-width: 1400px) {
-    .main-content {
-      grid-template-columns: 240px 1fr 220px;
-    }
-  }
-
-  @media (max-width: 1100px) {
+  @media (max-width: 1180px) {
     .main-content {
       grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr auto;
+      overflow-y: auto;
     }
 
     .sidebar-left,
-    .sidebar-right {
+    .sidebar-right,
+    .center-area {
+      overflow: visible;
       padding: 0;
     }
   }

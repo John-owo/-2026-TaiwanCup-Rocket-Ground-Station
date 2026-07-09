@@ -3,7 +3,7 @@ use crate::models::response::{InvokeError, InvokeResult};
 use crate::services::serial::Receiver;
 use crate::state::SerialState;
 
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tokio_util::sync::CancellationToken;
 
 /// 預設封包 payload 長度：13 個 f32 = 52 bytes
@@ -62,6 +62,13 @@ pub async fn start_monitoring(
         // 建立序列埠連線
         if let Err(e) = receiver.get_connection(path, baud_rate).await {
             log::error!("serial connection failed: {}", e);
+            let _ = handle_for_cleanup.emit(
+                "serial-error",
+                serde_json::json!({
+                    "errorType": "SERIAL_ERROR",
+                    "detail": e,
+                }),
+            );
             // 清除 cancellation token，讓使用者可以重新連線
             if let Some(state) = handle_for_cleanup.try_state::<SerialState>() {
                 let mut guard = state.cancellation_token.lock()

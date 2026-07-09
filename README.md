@@ -1,6 +1,6 @@
-# 🚀 2026 Taiwan Cup — Rocket Ground Station
+# 2026 Taiwan Cup — 五限可能地面站監控程式
 
-> **2026 台灣盃火箭競賽 — 地面站監控系統**
+> **2026 台灣盃火箭競賽 — 五限可能地面站監控系統**
 
 一套基於 **Tauri v2 + Svelte 5 + Rust** 的桌面應用程式，用於即時接收並視覺化火箭遙測資料（加速度、陀螺儀、GPS、氣壓、溫度等），提供地面站操作人員完整的飛行狀態監控介面。
 
@@ -154,7 +154,7 @@ Serial Port (COM) → SerialReceiver.receive_task()
 |------|------|
 | `src/main.ts` | **前端進入點**。使用 Svelte 5 的 `mount()` 將 `App` 元件掛載到 `#app`，匯入全域 CSS |
 | `src/app.css` | **全域設計系統 & 樣式表**。深色航太風格主題：<br>• CSS 自訂屬性：深色背景 (`#0a0e1a`)、霓虹強調色（Cyan、Green、Orange、Red + dim/glow 變體）<br>• 字體：Inter (sans-serif) + JetBrains Mono (monospace)，8 級字體大小<br>• Glassmorphism 效果：半透明背景、模糊、陰影<br>• 動畫：`pulse`、`fade-in`、`slide-up`、`glow`、`scan-line` 等<br>• 自訂捲軸、Utility Classes |
-| `src/App.svelte` | **根元件**。三欄式 Dashboard 佈局 (CSS Grid: 260px \| 1fr \| 260px)：<br>• **頂部列** — 火箭 SVG 圖標 + "PENTAX Ground Station" 標題 + ONLINE/OFFLINE 狀態徽章（附脈衝動畫）<br>• **左側邊欄** — `ConnectionPanel`<br>• **中央區域** — `TelemetryGrid` + `TelemetryCharts`<br>• **右側邊欄** — `AttitudeIndicator`<br>• **底部** — `StatusBar`<br>• 掃描線動畫效果 (CSS pseudo-element)<br>• RWD：≤1400px 縮小、≤1100px 單欄 |
+| `src/App.svelte` | **根元件**。三欄式監控版面：<br>• **頂部列** — 「五限可能」隊名、地面站監控程式標題、連線狀態與封包統計<br>• **左側邊欄** — `ConnectionPanel`<br>• **中央區域** — `TelemetryGrid` + `TelemetryCharts`<br>• **右側邊欄** — `AttitudeIndicator`<br>• **底部** — `StatusBar` |
 
 #### `src/lib/` — 共用程式庫
 
@@ -180,7 +180,7 @@ Serial Port (COM) → SerialReceiver.receive_task()
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│ 🚀 PENTAX Ground Station                  [● ONLINE]    │ ← 頂部列
+│ 五限可能 地面站監控程式                  [接收中]      │ ← 頂部列
 ├──────────┬──────────────────────────────┬────────────────┤
 │ 串口連接  │     遙測數值面板              │  人工地平儀     │
 │          │  ┌──────┬──────┬──────┐      │  (Attitude)    │

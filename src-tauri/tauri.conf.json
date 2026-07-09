@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "rocket-monitoring-system",
+  "productName": "五限可能地面站監控程式",
   "version": "0.1.0",
   "identifier": "com.taiwancup.rocketground",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Rocket Monitoring System",
+        "title": "五限可能 地面站監控程式",
         "width": 1200,
         "height": 800,
         "resizable": true,
