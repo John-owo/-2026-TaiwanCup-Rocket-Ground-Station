@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   DEFAULT_SETTINGS,
@@ -76,4 +77,12 @@ test('swaps occupied axis sources and changes signs without mutation', () => {
   });
   assert.deepEqual(DEFAULT_SETTINGS.axisMapping.x, { source: 'x', sign: 1 });
   assert.equal(setAxisSign(swapped, 'z', -1).z.sign, -1);
+});
+
+test('increments telemetry revision for every store update', () => {
+  const source = readFileSync(new URL('./stores.svelte.ts', import.meta.url), 'utf8');
+  const updateBody = source.match(
+    /updateTelemetry\(payload: TelemetryPayload\) \{([\s\S]*?)\n    \},/u,
+  )?.[1] ?? '';
+  assert.match(updateBody, /telemetryRevision \+= 1/u);
 });

@@ -38,6 +38,7 @@ function createDefaultTelemetry(): TelemetryPayload {
 function createStore() {
   const storage = typeof localStorage === 'undefined' ? undefined : localStorage;
   let telemetry = $state<TelemetryPayload>(createDefaultTelemetry());
+  let telemetryRevision = $state(0);
   let history = $state<TelemetryPayload[]>([]);
   let stats = $state<PacketStats>({ totalPackets: 0, failedPackets: 0, packetsPerSecond: 0 });
   let connected = $state(false);
@@ -54,6 +55,7 @@ function createStore() {
 
   return {
     get telemetry() { return telemetry; },
+    get telemetryRevision() { return telemetryRevision; },
     get history() { return history; },
     get stats() { return stats; },
     get connected() { return connected; },
@@ -94,6 +96,7 @@ function createStore() {
     updateTelemetry(payload: TelemetryPayload) {
       telemetry = { ...payload };
       history = [...history, { ...payload }].slice(-MAX_HISTORY);
+      telemetryRevision += 1;
     },
 
     updateStats(newStats: PacketStats) {
@@ -121,6 +124,7 @@ function createStore() {
 
     reset() {
       telemetry = createDefaultTelemetry();
+      telemetryRevision = 0;
       history = [];
       stats = { totalPackets: 0, failedPackets: 0, packetsPerSecond: 0 };
       connected = false;
