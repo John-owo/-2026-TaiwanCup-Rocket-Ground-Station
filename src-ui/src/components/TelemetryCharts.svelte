@@ -55,7 +55,7 @@
     <div class="chart-header">
       <div class="chart-title">
         <span class="dot cyan"></span>
-        Relative Altitude
+        相對高度
       </div>
       <span class="chart-latest mono">
         {altValues.length ? altValues[altValues.length - 1].toFixed(1) : '--'} m
@@ -75,7 +75,7 @@
               stroke-linecap="round" stroke-linejoin="round"/>
       {:else}
         <text x={WIDTH / 2} y={HEIGHT / 2} text-anchor="middle"
-              fill="var(--text-tertiary)" font-size="13">Waiting for telemetry...</text>
+              fill="var(--text-tertiary)" font-size="13">等待遙測資料…</text>
       {/if}
     </svg>
   </article>
@@ -84,7 +84,7 @@
     <div class="chart-header">
       <div class="chart-title">
         <span class="dot green"></span>
-        Vertical Velocity
+        垂直速度
       </div>
       <span class="chart-latest mono">
         {velValues.length ? velValues[velValues.length - 1].toFixed(2) : '--'} m/s
@@ -104,7 +104,7 @@
               stroke-linecap="round" stroke-linejoin="round"/>
       {:else}
         <text x={WIDTH / 2} y={HEIGHT / 2} text-anchor="middle"
-              fill="var(--text-tertiary)" font-size="13">Waiting for telemetry...</text>
+              fill="var(--text-tertiary)" font-size="13">等待遙測資料…</text>
       {/if}
     </svg>
   </article>

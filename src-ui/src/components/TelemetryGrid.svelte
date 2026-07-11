@@ -16,25 +16,25 @@
   }
 
   const fields: TelemetryField[] = [
-    { key: 'xAcceleration', label: 'Accel X', unit: 'm/s^2', category: 'imu', precision: 2, warnThreshold: 20, critThreshold: 50, icon: 'AX' },
-    { key: 'yAcceleration', label: 'Accel Y', unit: 'm/s^2', category: 'imu', precision: 2, warnThreshold: 20, critThreshold: 50, icon: 'AY' },
-    { key: 'zAcceleration', label: 'Accel Z', unit: 'm/s^2', category: 'imu', precision: 2, warnThreshold: 20, critThreshold: 50, icon: 'AZ' },
-    { key: 'xAngularVelocity', label: 'Gyro X', unit: 'deg/s', category: 'imu', precision: 2, warnThreshold: 200, critThreshold: 500, icon: 'GX' },
-    { key: 'yAngularVelocity', label: 'Gyro Y', unit: 'deg/s', category: 'imu', precision: 2, warnThreshold: 200, critThreshold: 500, icon: 'GY' },
-    { key: 'zAngularVelocity', label: 'Gyro Z', unit: 'deg/s', category: 'imu', precision: 2, warnThreshold: 200, critThreshold: 500, icon: 'GZ' },
-    { key: 'longitude', label: 'Longitude', unit: 'deg', category: 'gps', precision: 6, icon: 'LON' },
-    { key: 'latitude', label: 'Latitude', unit: 'deg', category: 'gps', precision: 6, icon: 'LAT' },
-    { key: 'altitude', label: 'Relative Altitude', unit: 'm', category: 'gps', precision: 2, warnThreshold: 1000, critThreshold: 3000, icon: 'ALT' },
-    { key: 'groundSpeed', label: 'Ground Speed', unit: 'm/s', category: 'gps', precision: 2, warnThreshold: 100, critThreshold: 300, icon: 'GS' },
-    { key: 'verticalVelocity', label: 'Vertical Velocity', unit: 'm/s', category: 'gps', precision: 2, warnThreshold: 50, critThreshold: 200, icon: 'VV' },
-    { key: 'airPressure', label: 'Pressure', unit: 'hPa', category: 'env', precision: 1, icon: 'P' },
-    { key: 'temperature', label: 'Temperature', unit: 'C', category: 'env', precision: 1, warnThreshold: 50, critThreshold: 80, icon: 'T' },
+    { key: 'xAcceleration', label: 'X 軸加速度', unit: 'm/s²', category: 'imu', precision: 2, warnThreshold: 20, critThreshold: 50, icon: 'AX' },
+    { key: 'yAcceleration', label: 'Y 軸加速度', unit: 'm/s²', category: 'imu', precision: 2, warnThreshold: 20, critThreshold: 50, icon: 'AY' },
+    { key: 'zAcceleration', label: 'Z 軸加速度', unit: 'm/s²', category: 'imu', precision: 2, warnThreshold: 20, critThreshold: 50, icon: 'AZ' },
+    { key: 'xAngularVelocity', label: 'X 軸角速度', unit: 'deg/s', category: 'imu', precision: 2, warnThreshold: 200, critThreshold: 500, icon: 'GX' },
+    { key: 'yAngularVelocity', label: 'Y 軸角速度', unit: 'deg/s', category: 'imu', precision: 2, warnThreshold: 200, critThreshold: 500, icon: 'GY' },
+    { key: 'zAngularVelocity', label: 'Z 軸角速度', unit: 'deg/s', category: 'imu', precision: 2, warnThreshold: 200, critThreshold: 500, icon: 'GZ' },
+    { key: 'longitude', label: '經度', unit: 'deg', category: 'gps', precision: 6, icon: 'LON' },
+    { key: 'latitude', label: '緯度', unit: 'deg', category: 'gps', precision: 6, icon: 'LAT' },
+    { key: 'altitude', label: '相對高度', unit: 'm', category: 'gps', precision: 2, warnThreshold: 1000, critThreshold: 3000, icon: 'ALT' },
+    { key: 'groundSpeed', label: '地面速度', unit: 'm/s', category: 'gps', precision: 2, warnThreshold: 100, critThreshold: 300, icon: 'GS' },
+    { key: 'verticalVelocity', label: '垂直速度', unit: 'm/s', category: 'gps', precision: 2, warnThreshold: 50, critThreshold: 200, icon: 'VV' },
+    { key: 'airPressure', label: '氣壓', unit: 'hPa', category: 'env', precision: 1, icon: 'P' },
+    { key: 'temperature', label: '溫度', unit: '°C', category: 'env', precision: 1, warnThreshold: 50, critThreshold: 80, icon: 'T' },
   ];
 
   const categories = [
-    { id: 'imu', label: 'IMU Sensors', color: 'var(--accent-cyan)' },
-    { id: 'gps', label: 'Flight / Position', color: 'var(--accent-green)' },
-    { id: 'env', label: 'Environment', color: 'var(--accent-orange)' },
+    { id: 'imu', label: 'IMU 感測器', color: 'var(--accent-cyan)' },
+    { id: 'gps', label: '飛行／定位', color: 'var(--accent-green)' },
+    { id: 'env', label: '環境感測', color: 'var(--accent-orange)' },
   ] as const;
 
   function getLevel(field: TelemetryField, value: number): 'normal' | 'warn' | 'crit' {

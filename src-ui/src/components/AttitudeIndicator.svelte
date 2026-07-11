@@ -146,16 +146,16 @@
       </svg>
     </div>
     <div class="attitude-numbers">
-      <span class="mono">Pitch {pitch.toFixed(1)} deg</span>
-      <span class="mono">Roll {roll.toFixed(1)} deg</span>
-      <span class="mono">Yaw {yaw.toFixed(1)} deg</span>
+      <span class="mono">俯仰 {pitch.toFixed(1)} deg</span>
+      <span class="mono">滾轉 {roll.toFixed(1)} deg</span>
+      <span class="mono">偏航 {yaw.toFixed(1)} deg</span>
     </div>
   </div>
 
   <div class="attitude-card">
     <div class="card-header">
       <span class="header-label">姿態</span>
-      <span class="header-value mono">P {pitch.toFixed(1)} deg / R {roll.toFixed(1)} deg</span>
+      <span class="header-value mono">俯仰 {pitch.toFixed(1)} / 滾轉 {roll.toFixed(1)} deg</span>
     </div>
     <div class="horizon-wrapper">
       <svg viewBox="0 0 {AH_SIZE} {AH_SIZE}" class="horizon-svg">

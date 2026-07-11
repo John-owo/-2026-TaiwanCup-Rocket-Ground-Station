@@ -15,9 +15,9 @@
   let resetTimer: ReturnType<typeof setTimeout> | undefined;
 
   const axisLabels: Record<SensorAxis, string> = {
-    x: '火箭 X（Roll）',
-    y: '火箭 Y（Pitch）',
-    z: '火箭 Z（Yaw）',
+    x: '火箭 X（滾轉）',
+    y: '火箭 Y（俯仰）',
+    z: '火箭 Z（偏航）',
   };
 
   let connected = $derived(store.connected);
