@@ -7,6 +7,10 @@ export async function startMonitoring(path: string, baudRate: number): Promise<v
   await invoke('start_monitoring', { path, baudRate });
 }
 
+export async function listSerialPorts(): Promise<string[]> {
+  return await invoke<string[]>('list_serial_ports');
+}
+
 export async function stopMonitoring(): Promise<void> {
   await invoke('stop_monitoring');
 }

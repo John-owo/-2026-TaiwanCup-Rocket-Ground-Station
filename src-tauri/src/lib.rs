@@ -43,6 +43,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::serial::list_serial_ports,
             commands::serial::start_monitoring,
             commands::serial::stop_monitoring,
             commands::serial::get_telemetry_history,

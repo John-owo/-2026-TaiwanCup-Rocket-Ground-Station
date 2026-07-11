@@ -9,6 +9,18 @@ use tokio_util::sync::CancellationToken;
 /// 預設封包 payload 長度：13 個 f32 = 52 bytes
 const EXPECT_PACKET_LENGTH: usize = 52;
 
+/// 列出目前系統可用的序列埠名稱。
+#[tauri::command]
+pub async fn list_serial_ports() -> InvokeResult<Vec<String>> {
+    let mut ports = tokio_serial::available_ports()
+        .map_err(|error| InvokeError::SerialError(error.to_string()))?
+        .into_iter()
+        .map(|port| port.port_name)
+        .collect::<Vec<_>>();
+    ports.sort();
+    Ok(ports)
+}
+
 /// 開始監控序列埠
 /// 前端需傳入 COM port 路徑與鮑率
 #[tauri::command]
