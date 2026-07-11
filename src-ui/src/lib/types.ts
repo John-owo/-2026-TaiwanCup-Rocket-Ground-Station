@@ -14,6 +14,27 @@ export interface TelemetryPayload {
   temperature: number;
 }
 
+export type SensorAxis = 'x' | 'y' | 'z';
+export type AxisSign = 1 | -1;
+
+export interface AxisRule {
+  source: SensorAxis;
+  sign: AxisSign;
+}
+
+export interface AxisMapping {
+  x: AxisRule;
+  y: AxisRule;
+  z: AxisRule;
+}
+
+export interface AppSettings {
+  version: 1;
+  portPath: string;
+  baudRate: number;
+  axisMapping: AxisMapping;
+}
+
 export interface PacketStats {
   totalPackets: number;
   failedPackets: number;

@@ -1,4 +1,19 @@
-import type { TelemetryPayload, PacketStats, SerialError } from './types';
+import {
+  DEFAULT_SETTINGS,
+  loadSettings,
+  saveSettings,
+  setAxisSign,
+  swapAxisSource,
+} from './settings.js';
+import type {
+  AppSettings,
+  AxisMapping,
+  AxisSign,
+  PacketStats,
+  SensorAxis,
+  SerialError,
+  TelemetryPayload,
+} from './types';
 
 const MAX_HISTORY = 200;
 
@@ -21,11 +36,21 @@ function createDefaultTelemetry(): TelemetryPayload {
 }
 
 function createStore() {
+  const storage = typeof localStorage === 'undefined' ? undefined : localStorage;
   let telemetry = $state<TelemetryPayload>(createDefaultTelemetry());
   let history = $state<TelemetryPayload[]>([]);
   let stats = $state<PacketStats>({ totalPackets: 0, failedPackets: 0, packetsPerSecond: 0 });
   let connected = $state(false);
   let errors = $state<SerialError[]>([]);
+  let settings = $state<AppSettings>(loadSettings(storage));
+  let settingsRevision = $state(0);
+  let axisMappingRevision = $state(0);
+
+  function persistSettings(next: AppSettings, axisChanged = false) {
+    settings = saveSettings(storage, next);
+    settingsRevision += 1;
+    if (axisChanged) axisMappingRevision += 1;
+  }
 
   return {
     get telemetry() { return telemetry; },
@@ -33,6 +58,38 @@ function createStore() {
     get stats() { return stats; },
     get connected() { return connected; },
     get errors() { return errors; },
+    get settings() { return settings; },
+    get settingsRevision() { return settingsRevision; },
+    get axisMappingRevision() { return axisMappingRevision; },
+
+    updateConnectionSettings(next: { portPath?: string; baudRate?: number }) {
+      persistSettings({ ...settings, ...next });
+    },
+
+    updateAxisSource(bodyAxis: SensorAxis, source: SensorAxis) {
+      persistSettings({
+        ...settings,
+        axisMapping: swapAxisSource(settings.axisMapping, bodyAxis, source),
+      }, true);
+    },
+
+    updateAxisSign(bodyAxis: SensorAxis, sign: AxisSign) {
+      persistSettings({
+        ...settings,
+        axisMapping: setAxisSign(settings.axisMapping, bodyAxis, sign),
+      }, true);
+    },
+
+    resetAxisMapping() {
+      persistSettings({
+        ...settings,
+        axisMapping: structuredClone(DEFAULT_SETTINGS.axisMapping) as AxisMapping,
+      }, true);
+    },
+
+    resetSettings() {
+      persistSettings(structuredClone(DEFAULT_SETTINGS), true);
+    },
 
     updateTelemetry(payload: TelemetryPayload) {
       telemetry = { ...payload };
