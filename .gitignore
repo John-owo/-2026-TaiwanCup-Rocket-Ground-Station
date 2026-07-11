@@ -2,6 +2,7 @@
 *.vscode*
 *lock*
 *fuse*
+.worktrees/
 
 # Rust
 src-tauri/target
