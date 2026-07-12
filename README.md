@@ -10,10 +10,11 @@
 
 | 功能 | 說明 |
 |------|------|
-| 🔌 序列埠連線管理 | 選擇 COM Port & 鮑率，一鍵連線/斷線 |
+| 🔌 序列埠連線管理 | 掃描並選擇 COM Port 與 Baud Rate，設定會保留但啟動時不自動連線 |
 | 📡 即時遙測資料接收 | 透過序列埠持續讀取火箭下傳的二進位封包，含 CRC-16 驗證 |
 | 📊 即時圖表 | 高度、垂直速度兩種時間序列圖表即時繪製 |
-| 🧭 姿態儀 (Attitude Indicator) | SVG 人工地平儀 + 航向指示器 (Compass) |
+| 🧭 MPU6050 姿態儀 | 陀螺儀積分搭配加速度門控融合，可在 UI 調整感測器軸向 |
+| 🗺️ GPS 即時地圖 | Leaflet + OpenStreetMap 顯示 NEO-6M 位置、飛行軌跡與自動跟隨 |
 | 📋 遙測數值面板 | 13 項感測器數值分類顯示（IMU / GPS / 環境） |
 | 📶 狀態列 | 連線狀態、封包統計、CRC 錯誤率、接收頻率、連線時間 |
 | 💾 資料庫記錄 | 遙測資料自動儲存至 SQLite，可查詢歷史紀錄 |
@@ -154,24 +155,28 @@ Serial Port (COM) → SerialReceiver.receive_task()
 |------|------|
 | `src/main.ts` | **前端進入點**。使用 Svelte 5 的 `mount()` 將 `App` 元件掛載到 `#app`，匯入全域 CSS |
 | `src/app.css` | **全域設計系統 & 樣式表**。深色航太風格主題：<br>• CSS 自訂屬性：深色背景 (`#0a0e1a`)、霓虹強調色（Cyan、Green、Orange、Red + dim/glow 變體）<br>• 字體：Inter (sans-serif) + JetBrains Mono (monospace)，8 級字體大小<br>• Glassmorphism 效果：半透明背景、模糊、陰影<br>• 動畫：`pulse`、`fade-in`、`slide-up`、`glow`、`scan-line` 等<br>• 自訂捲軸、Utility Classes |
-| `src/App.svelte` | **根元件**。三欄式監控版面：<br>• **頂部列** — 「五限可能」隊名、地面站監控程式標題、連線狀態與封包統計<br>• **左側邊欄** — `ConnectionPanel`<br>• **中央區域** — `TelemetryGrid` + `TelemetryCharts`<br>• **右側邊欄** — `AttitudeIndicator`<br>• **底部** — `StatusBar` |
+| `src/App.svelte` | **根元件**。三欄式監控版面：<br>• **頂部列** — 「五限可能」隊名、地面站監控程式標題、連線狀態與封包統計<br>• **左側邊欄** — `ConnectionPanel`<br>• **中央區域** — `TelemetryGrid` + `TelemetryCharts`<br>• **右側邊欄** — 上方 `GpsMap`、下方 `AttitudeIndicator`<br>• **底部** — `StatusBar` |
 
 #### `src/lib/` — 共用程式庫
 
 | 檔案 | 說明 |
 |------|------|
-| `types.ts` | **TypeScript 型別定義**：<br>• `TelemetryPayload` — 13 個數值欄位（加速度、角速度、GPS、環境）<br>• `PacketStats` — 封包統計（總數、失敗數、每秒封包數）<br>• `SerialError` — 錯誤型別（errorType + detail）<br>• `DbTelemetry` — 資料庫記錄型別 (extends TelemetryPayload + id + receivedAt) |
-| `tauri.ts` | **Tauri IPC 橋接層**。封裝前後端通訊：<br>• `startMonitoring(path, baudRate)` — 呼叫 `start_monitoring` 指令<br>• `stopMonitoring()` — 呼叫 `stop_monitoring` 指令<br>• `getTelemetryHistory(limit)` — 呼叫 `get_telemetry_history` 指令<br>• `setupEventListeners(store)` — 註冊 3 個事件監聽器：`update-telemetry`、`packet-stats`、`serial-error`，回傳 `UnlistenFn[]` 供清理 |
-| `stores.svelte.ts` | **Svelte 5 響應式狀態管理**。使用 `$state` rune 建立 singleton store：<br>• `telemetry` — 當前遙測資料快照<br>• `history` — 滾動緩衝區，最多 200 筆（供圖表繪製）<br>• `stats` — 封包統計<br>• `connected` — 連線狀態<br>• `errors` — 錯誤緩衝區，最多 50 筆<br>• 方法：`updateTelemetry()`、`updateStats()`、`addError()`、`setConnected()`、`clearHistory()`、`reset()` |
+| `types.ts` | **TypeScript 型別定義**：遙測、封包統計、資料庫記錄，以及持久化的軸向與連線設定 |
+| `tauri.ts` | **Tauri IPC 橋接層**：開始／停止監控、掃描序列埠、查詢歷史資料與註冊遙測事件 |
+| `stores.svelte.ts` | **Svelte 5 響應式狀態管理**：遙測快照、每封包 revision、最多 200 筆圖表資料、連線狀態，以及 COM／Baud／軸向持久化設定 |
+| `attitude.js` | **姿態估算器**：角速度以 `deg/s` 直接積分；總加速度接近 1g 時以互補濾波修正 Roll/Pitch，高動態時退回陀螺儀積分；Yaw 為相對航向 |
+| `settings.js` | **設定驗證與保存**：使用 `rocket-ground-station.settings.v1` 保存 COM Port、Baud Rate 與三軸來源／方向 |
+| `gps-map.js` | **GPS 純邏輯**：座標驗證、Haversine 距離、2 公尺軌跡門檻與 5,000 點上限 |
 
 #### `src/components/` — UI 元件
 
 | 檔案 | 說明 |
 |------|------|
-| `ConnectionPanel.svelte` | **連線管理面板**（左側邊欄）。Glassmorphism 卡片：<br>• COM Port 文字輸入框（預設 `COM3`）<br>• 鮑率下拉選單（9600 / 19200 / 38400 / 57600 / 115200）<br>• 連線/斷線按鈕（青色漸層 → 紅色漸層切換）<br>• LED 狀態指示燈（綠色=已連線、紅色=未連線，附發光效果）<br>• 處理中 spinner 動畫<br>• 錯誤訊息紅色橫幅 |
+| `ConnectionPanel.svelte` | **連線與校正面板**（左側邊欄）：掃描／保存 COM Port、保存 Baud Rate、連線控制，以及可交換來源軸與反轉方向的姿態軸向設定。設定在程式重開後保留，但不會自動連線 |
 | `TelemetryGrid.svelte` | **遙測數值格狀面板**（中央上方）。13 項數值依類別顯示：<br>• **IMU 感測器**（青色）：加速度 X/Y/Z (m/s²)、角速度 X/Y/Z (°/s)<br>• **GPS / 導航**（綠色）：經度、緯度、高度 (m)、地速、垂直速度<br>• **環境**（橙色）：氣壓 (hPa)、溫度 (°C)<br>• 告警機制：超過 `warnThreshold` 橙色邊框、超過 `critThreshold` 紅色脈衝動畫<br>• 交錯 slide-up 入場動畫 |
-| `TelemetryCharts.svelte` | **即時遙測圖表**（中央下方）。純 SVG 繪製（無外部圖表庫）：<br>• 兩欄式圖表：高度 (Altitude, 青色) + 垂直速度 (V. Velocity, 綠色)<br>• 從 `store.history` 取最近 100 筆繪製時間序列<br>• 自動縮放 Y 軸、5 條水平格線<br>• 漸層填充面積圖 + 最新數據點發光圓點<br>• 雙語標題（中英文）<br>• RWD：≤1200px 變單欄 |
-| `AttitudeIndicator.svelte` | **姿態儀**（右側邊欄）。三張堆疊卡片：<br>1️⃣ **人工地平儀** — 200×200 SVG：藍色天空漸層 + 棕色地面漸層，依俯仰角分割、翻滾角旋轉。含俯仰角刻度梯 (±10°/±20°/±40°)、翻滾角弧度標記、固定飛機參考符號（青色十字）<br>2️⃣ **航向指示器 (Compass)** — 140×140 SVG：旋轉式羅盤玫瑰，N/E/S/W 方位標記（北紅色、其餘青色），36 個刻度線，頂部固定指針<br>3️⃣ **角速度讀數** — 三欄顯示 Pitch / Roll / Yaw 角速度 (°/s)<br>• 從角速度進行時間積分推算 pitch / roll / yaw 角度（備註：正式版應使用 AHRS 演算法） |
+| `TelemetryCharts.svelte` | **即時遙測圖表**（中央下方）：以純 SVG 繪製相對高度與垂直速度，顯示最近 100 筆資料並自動縮放 Y 軸 |
+| `GpsMap.svelte` | **GPS 即時地圖**（右上）：Leaflet/OpenStreetMap 圖磚、火箭標記、最多 5,000 點軌跡、自動跟隨、定位火箭與清除軌跡。斷網時 GPS 數值與其他遙測仍持續更新 |
+| `AttitudeIndicator.svelte` | **姿態儀**（地圖下方）：火箭姿態、人工地平儀、相對航向與三軸角速度。每個新封包只更新一次；軸向變更或按下「歸零」會重設姿態 |
 | `StatusBar.svelte` | **底部狀態列**。水平分隔顯示：<br>• 📡 接收狀態指示（脈衝綠點 + "接收中" / "離線"）<br>• 📦 總封包數<br>• ⚠️ CRC 錯誤率（綠/橙/紅 三級，< 5% / 5-10% / > 10%）<br>• ⏱ 接收頻率 (Hz)<br>• 🕐 連線時間 (HH:MM:SS，每秒更新) |
 
 ---
@@ -235,6 +240,32 @@ Serial Port (COM) → SerialReceiver.receive_task()
 - 位元順序：MSB-first（非反射）
 - 計算範圍：Payload 52 bytes
 - CRC 位元組順序：Big-Endian
+
+---
+
+## 🎛️ 操作與限制
+
+### 發射前姿態校正
+
+1. 讓 MPU6050 靜止，確認三軸角速度接近零。
+2. 在姿態卡按「歸零」。
+3. 每次只繞一個實體軸轉動，確認畫面主要變化的是預期的滾轉、俯仰或偏航。
+4. 若軸向錯誤，在左側「姿態軸向設定」交換來源軸；若方向相反，切換正向／反向。
+5. MPU6050 沒有磁力計，因此相對航向會隨時間漂移，不能當成真北航向。
+
+### GPS 地圖
+
+- NEO-6M 經緯度有效後，右上地圖會顯示火箭位置並開始記錄軌跡。
+- `(0, 0)`、非有限值或超出經緯度範圍的資料視為尚未定位。
+- 地圖需要網路；圖磚失敗不會停止 GPS 數值、序列埠或其他遙測。
+- 使用 OpenStreetMap 標準圖磚並保留 `© OpenStreetMap contributors` attribution。
+- 不提供背景預抓、批次下載或離線圖磚，避免違反 OpenStreetMap 公共圖磚政策。
+
+### 設定保存
+
+- COM Port、Baud Rate 與姿態軸向會保存於本機。
+- 程式重開後只恢復設定，不會自動連線。
+- 若已保存的 COM Port 當下不存在，介面會保留該值並提示確認裝置。
 
 ---
 
