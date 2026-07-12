@@ -28,6 +28,19 @@ test('loads safe defaults when storage is empty or corrupt', () => {
   );
 });
 
+test('uses COM3 as the first-run connection default', () => {
+  assert.equal(loadSettings(memoryStorage()).portPath, 'COM3');
+});
+
+test('restores COM3 when a saved connection port is blank', () => {
+  assert.equal(validateSettings({
+    version: 1,
+    portPath: '',
+    baudRate: 115200,
+    axisMapping: DEFAULT_SETTINGS.axisMapping,
+  }).portPath, 'COM3');
+});
+
 test('round trips valid COM, baud, and axis mapping', () => {
   const storage = memoryStorage();
   const settings = validateSettings({

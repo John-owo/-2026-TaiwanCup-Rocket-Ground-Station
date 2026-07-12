@@ -13,7 +13,7 @@ export const BODY_AXES = Object.freeze(['x', 'y', 'z']);
 /** @type {AppSettings} */
 export const DEFAULT_SETTINGS = Object.freeze({
   version: 1,
-  portPath: '',
+  portPath: 'COM3',
   baudRate: 115200,
   axisMapping: Object.freeze({
     x: Object.freeze({ source: 'x', sign: 1 }),
@@ -39,7 +39,9 @@ export function validateSettings(value) {
   }
 
   const candidate = /** @type {Record<string, unknown>} */ (value);
-  const portPath = typeof candidate.portPath === 'string' ? candidate.portPath : '';
+  const portPath = typeof candidate.portPath === 'string' && candidate.portPath.trim()
+    ? candidate.portPath.trim()
+    : DEFAULT_SETTINGS.portPath;
   const baudRate = typeof candidate.baudRate === 'number' && BAUD_RATES.includes(candidate.baudRate)
     ? candidate.baudRate
     : 115200;
