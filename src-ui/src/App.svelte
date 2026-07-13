@@ -193,6 +193,11 @@
     overflow-y: auto;
   }
 
+  .sidebar-left {
+    position: relative;
+    z-index: 2;
+  }
+
   .sidebar-right {
     display: flex;
     flex-direction: column;

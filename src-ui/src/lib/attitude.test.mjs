@@ -46,6 +46,21 @@ test('updates the estimator once per packet interval', () => {
   );
 });
 
+test('integrates normal low-frequency telemetry at 500 ms and 1000 ms', () => {
+  const estimator = createAttitudeEstimator();
+  const actualImuSample = sample(
+    { x: 31.5, y: 1.4, z: -0.06 },
+    { x: -0.5, y: -0.35, z: 9.3 },
+  );
+
+  estimator.update(actualImuSample, 1000, identity);
+  const after500Ms = estimator.update(actualImuSample, 1500, identity);
+  const after1000Ms = estimator.update(actualImuSample, 2500, identity);
+
+  assert.ok(Math.abs(after500Ms.roll) + Math.abs(after500Ms.pitch) > 0.1);
+  assert.notDeepEqual(after1000Ms, after500Ms);
+});
+
 test('uses gravity correction near 1g but rejects powered-flight acceleration', () => {
   const estimator = createAttitudeEstimator({
     initialAttitude: { roll: 30, pitch: 20, yaw: 0 },
@@ -72,11 +87,18 @@ test('uses gravity correction near 1g but rejects powered-flight acceleration', 
   assert.deepEqual(boosted, beforeBoost);
 });
 
-test('does not integrate across gaps over 250 ms and normalizes yaw', () => {
+test('rebuilds the time baseline after a multi-second telemetry interruption', () => {
   const estimator = createAttitudeEstimator();
-  estimator.update(sample({ x: 0, y: 0, z: 200 }), 1000, identity);
-  assert.equal(estimator.update(sample({ x: 0, y: 0, z: 200 }), 1400, identity).yaw, 0);
-  assert.equal(estimator.update(sample({ x: 0, y: 0, z: 200 }), 1500, identity).yaw, 20);
+  const rotating = sample({ x: 0, y: 0, z: 100 });
+
+  estimator.update(rotating, 1000, identity);
+  const beforeGap = estimator.update(rotating, 1500, identity);
+  const afterGap = estimator.update(rotating, 6000, identity);
+  const afterResume = estimator.update(rotating, 6500, identity);
+
+  assert.equal(beforeGap.yaw, 50);
+  assert.deepEqual(afterGap, beforeGap);
+  assert.equal(afterResume.yaw, 100);
 });
 
 test('ignores non-finite gyro updates', () => {

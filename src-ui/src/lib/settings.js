@@ -52,15 +52,28 @@ export function validateSettings(value) {
     && sources.every(isSensorAxis)
     && rules.every((rule) => rule?.sign === 1 || rule?.sign === -1);
   const axisMapping = mappingValid
-    ? /** @type {AxisMapping} */ (mapping)
-    : DEFAULT_SETTINGS.axisMapping;
+    ? /** @type {AxisMapping} */ ({
+      x: {
+        source: /** @type {SensorAxis} */ (rules[0]?.source),
+        sign: /** @type {AxisSign} */ (rules[0]?.sign),
+      },
+      y: {
+        source: /** @type {SensorAxis} */ (rules[1]?.source),
+        sign: /** @type {AxisSign} */ (rules[1]?.sign),
+      },
+      z: {
+        source: /** @type {SensorAxis} */ (rules[2]?.source),
+        sign: /** @type {AxisSign} */ (rules[2]?.sign),
+      },
+    })
+    : structuredClone(DEFAULT_SETTINGS.axisMapping);
 
-  return structuredClone({
+  return {
     version: 1,
     portPath,
     baudRate,
     axisMapping,
-  });
+  };
 }
 
 /** @param {StorageLike | undefined} storage @returns {AppSettings} */

@@ -21,6 +21,8 @@
   };
 
   let connected = $derived(store.connected);
+  let latestSerialError = $derived(store.errors.at(-1)?.detail ?? '');
+  let displayedError = $derived(errorMsg || latestSerialError);
   let savedPortUnavailable = $derived(
     portsLoaded
       && portPath.trim() !== ''
@@ -95,9 +97,9 @@
       return;
     }
 
-    persistPort();
-    persistBaudRate();
-    if (!portPath) {
+    store.clearErrors();
+    const selectedPort = portPath.trim();
+    if (!selectedPort) {
       errorMsg = '請輸入 COM Port';
       return;
     }
@@ -105,7 +107,7 @@
     loading = true;
     errorMsg = '';
     try {
-      await startMonitoring(portPath, baudRate);
+      await startMonitoring(selectedPort, baudRate);
       store.setConnected(true);
     } catch (error: any) {
       errorMsg = error?.detail || error?.message || String(error);
@@ -180,8 +182,8 @@
     {/if}
   </button>
 
-  {#if errorMsg}
-    <div class="error-msg">{errorMsg}</div>
+  {#if displayedError}
+    <div class="error-msg">{displayedError}</div>
   {/if}
 
   <details class="axis-settings">

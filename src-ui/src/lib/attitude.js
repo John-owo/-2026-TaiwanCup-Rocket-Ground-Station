@@ -2,7 +2,9 @@ const GRAVITY_METERS_PER_SECOND_SQUARED = 9.80665;
 const ACCEL_MIN = GRAVITY_METERS_PER_SECOND_SQUARED * 0.85;
 const ACCEL_MAX = GRAVITY_METERS_PER_SECOND_SQUARED * 1.15;
 const FILTER_TIME_CONSTANT_SECONDS = 0.5;
-const MAX_PACKET_GAP_MS = 250;
+// Telemetry normally arrives around every 500 ms and can occasionally take 1000 ms.
+// Multi-second gaps still reset the time baseline instead of integrating downtime.
+const MAX_PACKET_GAP_MS = 1500;
 
 /** @typedef {'x' | 'y' | 'z'} SensorAxis */
 /** @typedef {{ x: number, y: number, z: number }} Vector3 */
