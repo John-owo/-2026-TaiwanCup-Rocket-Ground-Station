@@ -1,13 +1,12 @@
 use crate::infrastructures::serial::receiver::SerialReceiver;
+use crate::infrastructures::serial::command::CommandRequest;
+use crate::infrastructures::flight::{FlightRecorder, FlightSessionMetadata, FlightStats};
 use crate::models::response::{InvokeError, InvokeResult};
 use crate::services::serial::Receiver;
 use crate::state::SerialState;
 
 use tauri::{AppHandle, Manager, State};
 use tokio_util::sync::CancellationToken;
-
-/// 預設封包 payload 長度：13 個 f32 = 52 bytes
-const EXPECT_PACKET_LENGTH: usize = 52;
 
 fn reserve_monitoring(serial_state: &SerialState) -> InvokeResult<CancellationToken> {
     let mut token_guard = serial_state
@@ -38,6 +37,11 @@ fn release_monitoring(serial_state: &SerialState, cancellation_token: &Cancellat
         .is_some_and(CancellationToken::is_cancelled)
     {
         *token_guard = None;
+        let mut command_guard = serial_state
+            .command_tx
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        *command_guard = None;
     }
 }
 
@@ -64,7 +68,12 @@ pub async fn start_monitoring(
 ) -> InvokeResult<String> {
     // 原子性地保留啟動權，避免兩個 start command 同時通過檢查。
     let cancellation_token = reserve_monitoring(&serial_state)?;
-    let mut receiver = SerialReceiver::new(app_handle.clone(), cancellation_token.clone());
+    let (command_tx, command_rx) = tokio::sync::mpsc::unbounded_channel();
+    let mut receiver = SerialReceiver::new(
+        app_handle.clone(),
+        cancellation_token.clone(),
+        command_rx,
+    );
 
     // 先實際開啟序列埠；失敗時由 invoke reject 直接回報前端。
     if let Err(error) = receiver.get_connection(path.clone(), baud_rate).await {
@@ -85,6 +94,18 @@ pub async fn start_monitoring(
         *path_guard = Some(path.clone());
     }
     {
+        let mut command_guard = serial_state
+            .command_tx
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        *command_guard = Some(command_tx);
+    }
+    log_session_event(
+        &serial_state,
+        "INFO",
+        &format!("serial connected: {path} @ {baud_rate}"),
+    );
+    {
         let mut baud_guard = serial_state
             .baud_rate
             .lock()
@@ -98,7 +119,7 @@ pub async fn start_monitoring(
     // 開埠成功後，才在背景任務中啟動接收迴圈。
     tokio::spawn(async move {
         // 啟動接收迴圈（會持續執行直到被 cancel）
-        match receiver.start_receive(EXPECT_PACKET_LENGTH).await {
+        match receiver.start_receive().await {
             Ok(msg) => log::info!("receive loop ended: {}", msg),
             Err(e) => log::error!("receive loop error: {}", e),
         }
@@ -112,6 +133,106 @@ pub async fn start_monitoring(
     Ok("monitoring started".to_string())
 }
 
+fn queue_command(serial_state: &SerialState, request: CommandRequest) -> InvokeResult<()> {
+    let guard = serial_state
+        .command_tx
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    let sender = guard.as_ref().ok_or_else(|| {
+        InvokeError::SerialError("monitoring must be running before sending commands".to_string())
+    })?;
+    sender
+        .send(request)
+        .map_err(|_| InvokeError::SerialError("serial command queue is closed".to_string()))
+}
+
+#[tauri::command]
+pub async fn set_timer(duration_s: u32, serial_state: State<'_, SerialState>) -> InvokeResult<String> {
+    if duration_s == 0 {
+        return Err(InvokeError::ValidationFailed);
+    }
+    queue_command(&serial_state, CommandRequest::SetTimer(duration_s))?;
+    log_session_event(&serial_state, "INFO", &format!("SET_TIMER requested: {duration_s} s"));
+    Ok("SET_TIMER queued".to_string())
+}
+
+#[tauri::command]
+pub async fn force_release(serial_state: State<'_, SerialState>) -> InvokeResult<String> {
+    queue_command(&serial_state, CommandRequest::ForceRelease)?;
+    log_session_event(&serial_state, "WARN", "FORCE_RELEASE requested after UI safety unlock");
+    Ok("FORCE_RELEASE queued".to_string())
+}
+
+fn log_session_event(serial_state: &SerialState, level: &str, message: &str) {
+    let mut guard = serial_state
+        .flight_recorder
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    if let Some(recorder) = guard.as_mut() {
+        if let Err(error) = recorder.log_event(level, message) {
+            log::error!("failed to write session log: {error}");
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn start_flight_session(
+    metadata: FlightSessionMetadata,
+    serial_state: State<'_, SerialState>,
+    app_handle: AppHandle,
+) -> InvokeResult<String> {
+    let root = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|error| InvokeError::DatabaseError(error.to_string()))?;
+    let mut stats_guard = serial_state
+        .flight_stats
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    let mut recorder_guard = serial_state
+        .flight_recorder
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    if recorder_guard.is_some() {
+        return Err(InvokeError::ValidationFailed);
+    }
+    let recorder = FlightRecorder::start(&root, metadata)
+        .map_err(InvokeError::DatabaseError)?;
+    let directory = recorder.directory().display().to_string();
+    stats_guard.reset();
+    *recorder_guard = Some(recorder);
+    Ok(directory)
+}
+
+#[tauri::command]
+pub async fn stop_flight_session(
+    serial_state: State<'_, SerialState>,
+) -> InvokeResult<String> {
+    let stats = serial_state
+        .flight_stats
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .snapshot();
+    let mut recorder_guard = serial_state
+        .flight_recorder
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    let recorder = recorder_guard.as_mut().ok_or(InvokeError::ValidationFailed)?;
+    recorder.finish(&stats).map_err(InvokeError::DatabaseError)?;
+    let directory = recorder.directory().display().to_string();
+    *recorder_guard = None;
+    Ok(directory)
+}
+
+#[tauri::command]
+pub async fn get_flight_stats(serial_state: State<'_, SerialState>) -> InvokeResult<FlightStats> {
+    Ok(serial_state
+        .flight_stats
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .snapshot())
+}
+
 /// 停止監控序列埠
 #[tauri::command]
 pub async fn stop_monitoring(
@@ -122,6 +243,11 @@ pub async fn stop_monitoring(
 
     if let Some(cancellation_token) = token_guard.take() {
         cancellation_token.cancel();
+        *serial_state
+            .command_tx
+            .lock()
+            .unwrap_or_else(|error| error.into_inner()) = None;
+        log_session_event(&serial_state, "INFO", "serial monitoring stopped by operator");
         log::info!("monitoring stopped by user");
         Ok("monitoring stopped".to_string())
     } else {

@@ -6,6 +6,7 @@ import {
   swapAxisSource,
 } from './settings.js';
 import type {
+  AirborneSessionChange,
   AppSettings,
   AxisMapping,
   AxisSign,
@@ -13,12 +14,25 @@ import type {
   SensorAxis,
   SerialError,
   TelemetryPayload,
+  CommandStatus,
+  FlightStats,
 } from './types';
 
 const MAX_HISTORY = 200;
 
 function createDefaultTelemetry(): TelemetryPayload {
   return {
+    protocolVersion: 1,
+    sessionId: 0,
+    frameSeq: 0,
+    uptimeMs: 0,
+    restartReason: 0,
+    timerState: 0,
+    deployState: 0,
+    sensorFlags: 0,
+    remainingS: 0,
+    lastAckCommandId: 0,
+    lastAckResult: 0xFF,
     xAcceleration: 0,
     yAcceleration: 0,
     zAcceleration: 0,
@@ -46,6 +60,21 @@ function createStore() {
   let settings = $state<AppSettings>(loadSettings(storage));
   let settingsRevision = $state(0);
   let axisMappingRevision = $state(0);
+  let airborneSessionChange = $state<AirborneSessionChange | null>(null);
+  let airborneRestartCount = $state(0);
+  let commandStatus = $state<CommandStatus | null>(null);
+  let flightStats = $state<FlightStats>({
+    telemetryPackets: 0,
+    expectedPackets: 0,
+    lostPackets: 0,
+    duplicatePackets: 0,
+    crcErrors: 0,
+    linkOutages: 0,
+    maxLinkLossMs: 0,
+    restartCount: 0,
+  });
+  let lastPacketAt = $state<number | null>(null);
+  let flightSessionDirectory = $state('');
 
   function persistSettings(next: AppSettings, axisChanged = false) {
     settings = saveSettings(storage, next);
@@ -63,6 +92,12 @@ function createStore() {
     get settings() { return settings; },
     get settingsRevision() { return settingsRevision; },
     get axisMappingRevision() { return axisMappingRevision; },
+    get airborneSessionChange() { return airborneSessionChange; },
+    get airborneRestartCount() { return airborneRestartCount; },
+    get commandStatus() { return commandStatus; },
+    get flightStats() { return flightStats; },
+    get lastPacketAt() { return lastPacketAt; },
+    get flightSessionDirectory() { return flightSessionDirectory; },
 
     updateConnectionSettings(next: { portPath?: string; baudRate?: number }) {
       persistSettings({ ...settings, ...next });
@@ -97,10 +132,28 @@ function createStore() {
       telemetry = { ...payload };
       history = [...history, { ...payload }].slice(-MAX_HISTORY);
       telemetryRevision += 1;
+      lastPacketAt = Date.now();
+    },
+
+    updateAirborneSession(change: AirborneSessionChange) {
+      airborneSessionChange = { ...change };
+      if (change.previousSessionId !== null) airborneRestartCount += 1;
     },
 
     updateStats(newStats: PacketStats) {
       stats = { ...newStats };
+    },
+
+    updateCommandStatus(status: CommandStatus) {
+      commandStatus = { ...status };
+    },
+
+    updateFlightStats(nextStats: FlightStats) {
+      flightStats = { ...nextStats };
+    },
+
+    setFlightSessionDirectory(directory: string) {
+      flightSessionDirectory = directory;
     },
 
     addError(error: SerialError) {
@@ -111,6 +164,10 @@ function createStore() {
       connected = val;
       if (!val) {
         stats = { totalPackets: 0, failedPackets: 0, packetsPerSecond: 0 };
+        airborneSessionChange = null;
+        airborneRestartCount = 0;
+        commandStatus = null;
+        lastPacketAt = null;
       }
     },
 
@@ -129,6 +186,21 @@ function createStore() {
       stats = { totalPackets: 0, failedPackets: 0, packetsPerSecond: 0 };
       connected = false;
       errors = [];
+      airborneSessionChange = null;
+      airborneRestartCount = 0;
+      commandStatus = null;
+      flightStats = {
+        telemetryPackets: 0,
+        expectedPackets: 0,
+        lostPackets: 0,
+        duplicatePackets: 0,
+        crcErrors: 0,
+        linkOutages: 0,
+        maxLinkLossMs: 0,
+        restartCount: 0,
+      };
+      lastPacketAt = null;
+      flightSessionDirectory = '';
     },
   };
 }

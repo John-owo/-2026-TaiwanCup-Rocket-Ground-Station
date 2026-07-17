@@ -1,21 +1,21 @@
 # Codex Handoff
 
-Before changing this ground-station project, read the complete handoff:
+Read the current ground-station handoff before making changes:
+
+```text
+docs/handoff/2026-07-16-p0-bidirectional-control-handoff.md
+```
+
+Historical monitoring／attitude context remains in:
 
 ```text
 docs/handoff/2026-07-13-codex-handoff.md
 ```
 
-Continue from branch:
+Continue from branch `feature/ground-station-upgrade`. The workspace contains pre-existing and current uncommitted changes; do not reset, discard, stage or commit them without reviewing scope.
 
-```text
-feature/ground-station-upgrade
-```
+The 2026-07-16 automated Protocol, Rust, frontend, Tauri, and ESP32 checks passed. Real E22, M8N, servo, and end-to-end UI results remain `NOT RUN`; follow workspace `../P0_HARDWARE_TEST_PLAN.md` and do not report them as passed until evidence is saved.
 
-The portable Windows test build is:
+## Release packaging rule
 
-```text
-artifacts/GroundStation_0.1.0_Portable_2026-07-13.exe
-```
-
-The automated checks recorded in the full handoff passed, but the final monitoring and MPU6050 hardware matrices remain `NOT RUN`. Do not report them as passing until they are actually performed.
+After every ground-station source/configuration change, run `.\package_ground_station.ps1` from `ground_station/`. It must pass Rust tests/check, frontend tests/check/build and Tauri release build before it copies a versioned executable into `ground_station/artifacts/`. The script reads the release version from `src-tauri/tauri.conf.json`, writes a timestamped `.exe`, a validation manifest and `LATEST.txt`; do not distribute a manually copied or unverified `app.exe`.

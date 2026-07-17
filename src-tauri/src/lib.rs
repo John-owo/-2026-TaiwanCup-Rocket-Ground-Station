@@ -46,6 +46,11 @@ pub fn run() {
             commands::serial::list_serial_ports,
             commands::serial::start_monitoring,
             commands::serial::stop_monitoring,
+            commands::serial::set_timer,
+            commands::serial::force_release,
+            commands::serial::start_flight_session,
+            commands::serial::stop_flight_session,
+            commands::serial::get_flight_stats,
             commands::serial::get_telemetry_history,
         ])
         .run(tauri::generate_context!())

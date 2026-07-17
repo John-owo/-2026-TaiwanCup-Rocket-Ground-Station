@@ -220,7 +220,7 @@
 
   <div class="conn-info">
     <span class="info-label">封包格式</span>
-    <span class="info-value mono">0xAA + 52B + CRC16</span>
+    <span class="info-value mono">Protocol v1/v2 · 94B/63B TELEMETRY</span>
   </div>
 </div>
 

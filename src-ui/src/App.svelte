@@ -4,6 +4,7 @@
   import type { UnlistenFn } from '@tauri-apps/api/event';
 
   import ConnectionPanel from '@/components/ConnectionPanel.svelte';
+  import FlightControlPanel from '@/components/FlightControlPanel.svelte';
   import TelemetryGrid from '@/components/TelemetryGrid.svelte';
   import TelemetryCharts from '@/components/TelemetryCharts.svelte';
   import GpsMap from '@/components/GpsMap.svelte';
@@ -55,6 +56,7 @@
   <div class="main-content">
     <aside class="sidebar-left">
       <ConnectionPanel />
+      <FlightControlPanel />
     </aside>
 
     <main class="center-area">

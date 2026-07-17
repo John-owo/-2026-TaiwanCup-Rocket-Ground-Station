@@ -1,5 +1,8 @@
 use std::sync::{Arc, Mutex};
 use tokio_util::sync::CancellationToken;
+use tokio::sync::mpsc;
+use crate::infrastructures::serial::command::CommandRequest;
+use crate::infrastructures::flight::{FlightRecorder, FlightStatsTracker};
 
 /// 序列埠監控的應用程式狀態
 /// 透過 Tauri managed state 在所有 command 間共享
@@ -10,10 +13,14 @@ pub struct SerialState {
     pub baud_rate: Mutex<Option<u32>>,
     /// 取消令牌：用來控制接收迴圈的生命週期
     pub cancellation_token: Mutex<Option<CancellationToken>>,
+    /// Active receiver command channel. All writes stay in the serial receive task.
+    pub command_tx: Mutex<Option<mpsc::UnboundedSender<CommandRequest>>>,
     /// CRC 驗證失敗計數
     pub verification_failed_count: Arc<Mutex<u32>>,
     /// 總封包計數
     pub total_packet_count: Arc<Mutex<u64>>,
+    pub flight_stats: Arc<Mutex<FlightStatsTracker>>,
+    pub flight_recorder: Arc<Mutex<Option<FlightRecorder>>>,
 }
 
 impl SerialState {
@@ -22,8 +29,11 @@ impl SerialState {
             path: Mutex::new(Some(path)),
             baud_rate: Mutex::new(Some(baud_rate)),
             cancellation_token: Mutex::new(None),
+            command_tx: Mutex::new(None),
             verification_failed_count: Arc::new(Mutex::new(0)),
             total_packet_count: Arc::new(Mutex::new(0)),
+            flight_stats: Arc::new(Mutex::new(FlightStatsTracker::default())),
+            flight_recorder: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -34,8 +44,11 @@ impl Default for SerialState {
             path: Mutex::new(None),
             baud_rate: Mutex::new(None),
             cancellation_token: Mutex::new(None),
+            command_tx: Mutex::new(None),
             verification_failed_count: Arc::new(Mutex::new(0)),
             total_packet_count: Arc::new(Mutex::new(0)),
+            flight_stats: Arc::new(Mutex::new(FlightStatsTracker::default())),
+            flight_recorder: Arc::new(Mutex::new(None)),
         }
     }
 }
