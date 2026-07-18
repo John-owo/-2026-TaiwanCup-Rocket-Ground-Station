@@ -4,8 +4,10 @@
   import type { UnlistenFn } from '@tauri-apps/api/event';
 
   import ConnectionPanel from '@/components/ConnectionPanel.svelte';
+  import FlightControlPanel from '@/components/FlightControlPanel.svelte';
   import TelemetryGrid from '@/components/TelemetryGrid.svelte';
   import TelemetryCharts from '@/components/TelemetryCharts.svelte';
+  import GpsMap from '@/components/GpsMap.svelte';
   import AttitudeIndicator from '@/components/AttitudeIndicator.svelte';
   import StatusBar from '@/components/StatusBar.svelte';
 
@@ -37,16 +39,16 @@
         </svg>
       </div>
       <div class="brand-text">
-        <h1>五限可能 Ground Station</h1>
-        <span class="brand-sub">2026 TaiwanCup Rocket Monitoring · Relative Altitude</span>
+        <h1>五限可能 火箭地面站</h1>
+        <span class="brand-sub">2026 台灣盃火箭監控 · 相對高度</span>
       </div>
     </div>
 
     <div class="top-bar-right">
-      <div class="packet-chip mono">{packets.toLocaleString()} PKT</div>
+      <div class="packet-chip mono">封包 {packets.toLocaleString()}</div>
       <div class="status-badge" class:online={connected}>
         <div class="badge-dot"></div>
-        <span>{connected ? 'ONLINE' : 'OFFLINE'}</span>
+        <span>{connected ? '已連線' : '未連線'}</span>
       </div>
     </div>
   </header>
@@ -54,6 +56,7 @@
   <div class="main-content">
     <aside class="sidebar-left">
       <ConnectionPanel />
+      <FlightControlPanel />
     </aside>
 
     <main class="center-area">
@@ -62,6 +65,7 @@
     </main>
 
     <aside class="sidebar-right">
+      <GpsMap />
       <AttitudeIndicator />
     </aside>
   </div>
@@ -189,6 +193,17 @@
   .center-area {
     min-height: 0;
     overflow-y: auto;
+  }
+
+  .sidebar-left {
+    position: relative;
+    z-index: 2;
+  }
+
+  .sidebar-right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
   }
 
   .center-area {

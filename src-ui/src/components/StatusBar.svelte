@@ -45,20 +45,20 @@
 <div class="status-bar">
   <div class="status-item">
     <div class="pulse-dot" class:active={receiving}></div>
-    <span class="status-label">{connected ? 'RECEIVING' : 'STANDBY'}</span>
+    <span class="status-label">{connected ? '接收中' : '待命'}</span>
   </div>
 
   <div class="separator"></div>
 
   <div class="status-item">
-    <span class="status-label">Packets</span>
+    <span class="status-label">封包</span>
     <span class="status-value mono">{stats.totalPackets.toLocaleString()}</span>
   </div>
 
   <div class="separator"></div>
 
   <div class="status-item" class:warn={errorRateLevel === 'warn'} class:crit={errorRateLevel === 'crit'}>
-    <span class="status-label">CRC Fail</span>
+    <span class="status-label">CRC 失敗</span>
     <span
       class="status-value mono"
       class:text-red={errorRateLevel === 'crit'}
@@ -73,14 +73,14 @@
   <div class="separator"></div>
 
   <div class="status-item">
-    <span class="status-label">Rate</span>
+    <span class="status-label">頻率</span>
     <span class="status-value mono">{stats.packetsPerSecond.toFixed(1)} Hz</span>
   </div>
 
   <div class="separator"></div>
 
   <div class="status-item">
-    <span class="status-label">Runtime</span>
+    <span class="status-label">運行時間</span>
     <span class="status-value mono">{elapsed}</span>
   </div>
 </div>

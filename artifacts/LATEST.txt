@@ -1,0 +1,3 @@
+﻿version=0.1.0
+executable=GroundStation_0.1.0_Portable_2026-07-17_220122.exe
+manifest=GroundStation_0.1.0_Portable_2026-07-17_220122.json

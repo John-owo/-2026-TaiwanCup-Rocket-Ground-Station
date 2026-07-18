@@ -1,42 +1,69 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { store } from '@/lib/stores.svelte';
   import {
-    integrateMpu6050Attitude,
-    mpu6050GyroRatesToDegrees,
+    createAttitudeEstimator,
+    mapSensorVector,
   } from '@/lib/attitude.js';
-  import type { TelemetryPayload } from '@/lib/types';
 
-  let telemetry: TelemetryPayload = $derived(store.telemetry);
-  let gyroRates = $derived(mpu6050GyroRatesToDegrees({
-    x: telemetry.xAngularVelocity,
-    y: telemetry.yAngularVelocity,
-    z: telemetry.zAngularVelocity,
-  }));
+  const estimator = createAttitudeEstimator();
+  let gyroRates = $state({ x: 0, y: 0, z: 0 });
 
   let pitch = $state(0);
   let roll = $state(0);
   let yaw = $state(0);
-  let lastTime = $state(Date.now());
+  let appliedAxisRevision = -1;
 
   $effect(() => {
-    const now = Date.now();
-    const dt = Math.min((now - lastTime) / 1000, 0.1);
-    lastTime = now;
+    const axisRevision = store.axisMappingRevision;
+    if (axisRevision === appliedAxisRevision) return;
+    appliedAxisRevision = axisRevision;
+    const reset = estimator.reset();
+    roll = reset.roll;
+    pitch = reset.pitch;
+    yaw = reset.yaw;
+    gyroRates = { x: 0, y: 0, z: 0 };
+  });
 
-    const next = integrateMpu6050Attitude(
-      { roll, pitch, yaw },
+  $effect(() => {
+    const revision = store.telemetryRevision;
+    if (revision === 0) return;
+
+    const snapshot = untrack(() => ({
+      telemetry: store.telemetry,
+      mapping: store.settings.axisMapping,
+    }));
+    const rawGyro = {
+      x: snapshot.telemetry.xAngularVelocity,
+      y: snapshot.telemetry.yAngularVelocity,
+      z: snapshot.telemetry.zAngularVelocity,
+    };
+    gyroRates = mapSensorVector(rawGyro, snapshot.mapping);
+
+    const next = estimator.update(
       {
-        x: telemetry.xAngularVelocity,
-        y: telemetry.yAngularVelocity,
-        z: telemetry.zAngularVelocity,
+        gyro: rawGyro,
+        accel: {
+          x: snapshot.telemetry.xAcceleration,
+          y: snapshot.telemetry.yAcceleration,
+          z: snapshot.telemetry.zAcceleration,
+        },
       },
-      dt,
+      performance.now(),
+      snapshot.mapping,
     );
 
     roll = next.roll;
     pitch = next.pitch;
     yaw = next.yaw;
   });
+
+  function zeroAttitude() {
+    const reset = estimator.reset();
+    roll = reset.roll;
+    pitch = reset.pitch;
+    yaw = reset.yaw;
+  }
 
   const AH_SIZE = 200;
   const AH_CENTER = AH_SIZE / 2;
@@ -80,8 +107,8 @@
 <div class="attitude-container">
   <div class="attitude-card rocket-card">
     <div class="card-header">
-      <span class="header-label">ROCKET ATTITUDE</span>
-      <span class="header-value mono">Y {yaw.toFixed(1)} deg</span>
+      <span class="header-label">火箭姿態</span>
+      <button class="zero-btn" onclick={zeroAttitude}>歸零</button>
     </div>
     <div class="rocket-wrapper">
       <svg viewBox="0 0 220 220" class="rocket-svg">
@@ -119,16 +146,16 @@
       </svg>
     </div>
     <div class="attitude-numbers">
-      <span class="mono">Pitch {pitch.toFixed(1)} deg</span>
-      <span class="mono">Roll {roll.toFixed(1)} deg</span>
-      <span class="mono">Yaw {yaw.toFixed(1)} deg</span>
+      <span class="mono">俯仰 {pitch.toFixed(1)} deg</span>
+      <span class="mono">滾轉 {roll.toFixed(1)} deg</span>
+      <span class="mono">偏航 {yaw.toFixed(1)} deg</span>
     </div>
   </div>
 
   <div class="attitude-card">
     <div class="card-header">
-      <span class="header-label">ATTITUDE</span>
-      <span class="header-value mono">P {pitch.toFixed(1)} deg / R {roll.toFixed(1)} deg</span>
+      <span class="header-label">姿態</span>
+      <span class="header-value mono">俯仰 {pitch.toFixed(1)} / 滾轉 {roll.toFixed(1)} deg</span>
     </div>
     <div class="horizon-wrapper">
       <svg viewBox="0 0 {AH_SIZE} {AH_SIZE}" class="horizon-svg">
@@ -194,7 +221,7 @@
 
   <div class="attitude-card">
     <div class="card-header">
-      <span class="header-label">HEADING</span>
+      <span class="header-label">相對航向</span>
       <span class="header-value mono">{yaw.toFixed(1)} deg</span>
     </div>
     <div class="compass-wrapper">
@@ -235,21 +262,21 @@
 
   <div class="attitude-card angular-readout">
     <div class="card-header">
-      <span class="header-label">GYRO RATE</span>
+      <span class="header-label">角速度</span>
     </div>
     <div class="angular-values">
       <div class="angular-item">
-        <span class="angular-label">PITCH</span>
+        <span class="angular-label">俯仰</span>
         <span class="angular-val mono">{gyroRates.y.toFixed(1)}</span>
         <span class="angular-unit">deg/s</span>
       </div>
       <div class="angular-item">
-        <span class="angular-label">ROLL</span>
+        <span class="angular-label">滾轉</span>
         <span class="angular-val mono">{gyroRates.x.toFixed(1)}</span>
         <span class="angular-unit">deg/s</span>
       </div>
       <div class="angular-item">
-        <span class="angular-label">YAW</span>
+        <span class="angular-label">偏航</span>
         <span class="angular-val mono">{gyroRates.z.toFixed(1)}</span>
         <span class="angular-unit">deg/s</span>
       </div>
@@ -299,6 +326,15 @@
     font-size: var(--fs-sm);
     color: var(--accent-cyan);
     font-weight: 600;
+  }
+
+  .zero-btn {
+    padding: var(--sp-1) var(--sp-3);
+    border: 1px solid var(--accent-cyan-dim);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    color: var(--accent-cyan);
+    font-size: var(--fs-xs);
   }
 
   .horizon-wrapper,

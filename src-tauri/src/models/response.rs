@@ -14,11 +14,21 @@ pub enum InvokeError {
     DatabaseError(String),
 }
 
-/// 遙測資料封包，對應序列埠解析後的 13 個感測器欄位
-/// 順序與韌體二進位格式相同（Big-Endian f32）
+/// Protocol v1/v2 TELEMETRY 封包，感測值均已還原為物理單位。
 #[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TelemetryPayload {
+    pub protocol_version: u8,
+    pub session_id: u32,
+    pub frame_seq: u32,
+    pub uptime_ms: u32,
+    pub restart_reason: u8,
+    pub timer_state: u8,
+    pub deploy_state: u8,
+    pub sensor_flags: u8,
+    pub remaining_s: u32,
+    pub last_ack_command_id: u32,
+    pub last_ack_result: u8,
     pub x_acceleration: f32,     // m/s²
     pub y_acceleration: f32,     // m/s²
     pub z_acceleration: f32,     // m/s²
@@ -32,6 +42,47 @@ pub struct TelemetryPayload {
     pub vertical_velocity: f32,  // m/s
     pub air_pressure: f32,       // hPa
     pub temperature: f32,        // °C
+}
+
+/// 空中端 session 第一次出現或改變時通知前端。
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AirborneSessionChanged {
+    pub previous_session_id: Option<u32>,
+    pub session_id: u32,
+    pub restart_reason: u8,
+}
+
+/// Protocol v1/v2 ACK frame decoded from the airborne endpoint.
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AckPayload {
+    pub session_id: u32,
+    /// v1 has an independent ACK sequence; compact v2 deliberately omits it.
+    pub frame_seq: Option<u32>,
+    pub command_id: u32,
+    pub acked_type: u8,
+    pub result: u8,
+    pub timer_state: u8,
+    pub deploy_state: u8,
+    pub remaining_s: u32,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandStatusEvent {
+    pub command_id: Option<u32>,
+    pub command_type: String,
+    pub status: String,
+    pub attempts: u32,
+    pub result: Option<u8>,
+    pub detail: String,
+}
+
+#[derive(Clone, Debug)]
+pub enum ParsedFrame {
+    Telemetry(TelemetryPayload),
+    Ack(AckPayload),
 }
 
 /// 資料庫儲存的遙測記錄，包含時間戳記與資料庫 ID
