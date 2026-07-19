@@ -34,7 +34,7 @@
 - 收到新 session 時，舊 ACK 不會改變狀態；最新 timer 會以新 command ID 重建，`FORCE_RELEASE` 不跨 session 自動重放。收到 telemetry last-ACK 也能在獨立 ACK 遺失時停止重送。
 - 正式空中 telemetry 週期為 1800 ms，地面站失聯門檻為 4500 ms。實測 1800 ms 三輪共 60/60 timer 首次 ACK，telemetry 遺失／重複／CRC 都是 0；ESP32 #2 USB 必須拔除並使用外部電源才能進行 RF 台架測試。
 
-Protocol v1/v2 共用測試向量位於工作區根目錄 `protocol/`；正式產物應由通過完整驗證的 Git 提交建置，不將本機臨時執行檔納入版本控制。
+最新已驗證 portable 版本為 [`GroundStation_0.1.0_Portable_2026-07-20_023341.exe`](artifacts/GroundStation_0.1.0_Portable_2026-07-20_023341.exe)，SHA-256 `176E755317C7FCD6AAAFEDE3FA4F940349F5630AD9389D9334550FC8F55094A8`。Protocol v1/v2 共用測試向量位於工作區根目錄 `protocol/`。
 
 ---
 
@@ -372,7 +372,7 @@ cargo check
 
 2026-07-16 已驗證的 no-bundle 產物位於 `src-tauri/target/release/app.exe`。若需要 installer／bundle，另行執行正式 bundle build 並保存該次驗證結果，不要把 no-bundle 結果當成 installer 已驗證。
 
-正式發行前需保存上述測試、型別檢查、前端 production build 與 Tauri release build 的通過結果；不要把未驗證或本機臨時產生的執行檔提交至版本庫。
+正式發行前需保存上述測試、型別檢查、前端 production build 與 Tauri release build 的通過結果。通過後，將 `src-tauri/target/release/app.exe` 複製為 `artifacts/GroundStation_<version>_Portable_<YYYY-MM-DD_HHMMSS>.exe`，建立同名 `.json` 驗證清單並更新 `artifacts/LATEST.txt`。專用 PowerShell 打包腳本已移除，但此命名與保存規則仍維持不變；未通過驗證的本機產物不得標記為最新版。
 
 ---
 

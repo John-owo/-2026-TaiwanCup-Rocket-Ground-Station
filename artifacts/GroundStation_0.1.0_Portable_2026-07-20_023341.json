@@ -1,0 +1,18 @@
+{
+  "productName": "五限可能地面站監控程式",
+  "version": "0.1.0",
+  "builtAt": "2026-07-20T02:33:41+08:00",
+  "executable": "GroundStation_0.1.0_Portable_2026-07-20_023341.exe",
+  "source": "src-tauri/target/release/app.exe",
+  "sourceCommit": "7d71816ca1e01928fe452806d8ee7ff5a7d85776",
+  "sizeBytes": 12797440,
+  "sha256": "176E755317C7FCD6AAAFEDE3FA4F940349F5630AD9389D9334550FC8F55094A8",
+  "validation": [
+    "cargo test (25 passed)",
+    "cargo check",
+    "pnpm test (38 passed)",
+    "pnpm check (0 errors, 0 warnings)",
+    "pnpm build",
+    "tauri build --no-bundle"
+  ]
+}
