@@ -136,7 +136,7 @@ test('connection panel displays and clears background serial errors', () => {
   assert.match(source, /store\.clearErrors\(\)/u);
 });
 
-test('monitoring starts without persisting settings inside the click handler', () => {
+test('monitoring requests mandatory metadata without opening COM directly', () => {
   const source = readFileSync(
     new URL('../components/ConnectionPanel.svelte', import.meta.url),
     'utf8',
@@ -144,6 +144,8 @@ test('monitoring starts without persisting settings inside the click handler', (
   const body = source.match(/async function handleConnect\(\) \{([\s\S]*?)\n  \}/u)?.[1] ?? '';
 
   assert.match(body, /const selectedPort = portPath\.trim\(\);/u);
+  assert.match(body, /store\.requestTestStart\(selectedPort, baudRate\)/u);
+  assert.doesNotMatch(body, /startTestMonitoring|startMonitoring/u);
   assert.doesNotMatch(body, /persistPort\(\);\s*persistBaudRate\(\);/u);
 });
 

@@ -4,181 +4,216 @@
 
   let history: TelemetryPayload[] = $derived(store.history);
 
-  const WIDTH = 600;
-  const HEIGHT = 200;
-  const PADDING = { top: 20, right: 20, bottom: 30, left: 55 };
+  const WIDTH = 760;
+  const HEIGHT = 236;
+  const PADDING = { top: 18, right: 22, bottom: 30, left: 56 };
   const CHART_W = WIDTH - PADDING.left - PADDING.right;
   const CHART_H = HEIGHT - PADDING.top - PADDING.bottom;
   const MAX_POINTS = 100;
 
-  function getChartData(data: TelemetryPayload[], key: keyof TelemetryPayload) {
-    return data.slice(-MAX_POINTS).map((item) => item[key] as number);
+  function valuesFor(data: TelemetryPayload[], key: keyof TelemetryPayload): number[] {
+    return data.slice(-MAX_POINTS).map((item) => Number(item[key]));
   }
 
-  function buildPath(values: number[], minV: number, maxV: number): string {
+  function pointPath(values: number[], minValue: number, maxValue: number): string {
     if (values.length < 2) return '';
-    const range = maxV - minV || 1;
+    const range = maxValue - minValue || 1;
     const stepX = CHART_W / Math.max(values.length - 1, 1);
-
     return values.map((value, index) => {
       const x = PADDING.left + index * stepX;
-      const y = PADDING.top + CHART_H - ((value - minV) / range) * CHART_H;
+      const y = PADDING.top + CHART_H - ((value - minValue) / range) * CHART_H;
       return `${index === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
   }
 
-  function getGridLines(minV: number, maxV: number, count = 5) {
-    const range = maxV - minV || 1;
-    const step = range / (count - 1);
+  function gridLines(minValue: number, maxValue: number, count = 5) {
+    const range = maxValue - minValue || 1;
     return Array.from({ length: count }, (_, index) => {
-      const value = minV + step * index;
-      const y = PADDING.top + CHART_H - ((value - minV) / range) * CHART_H;
+      const value = minValue + (range * index) / (count - 1);
+      const y = PADDING.top + CHART_H - ((value - minValue) / range) * CHART_H;
       return { value, y };
     });
   }
 
-  let altValues = $derived(getChartData(history, 'altitude'));
-  let altMin = $derived(altValues.length ? Math.min(...altValues, 0) : 0);
-  let altMax = $derived(altValues.length ? Math.max(...altValues, 10) : 100);
-  let altPath = $derived(buildPath(altValues, altMin, altMax));
-  let altGrid = $derived(getGridLines(altMin, altMax));
-
-  let velValues = $derived(getChartData(history, 'verticalVelocity'));
-  let velMin = $derived(velValues.length ? Math.min(...velValues, -10) : -10);
-  let velMax = $derived(velValues.length ? Math.max(...velValues, 10) : 10);
-  let velPath = $derived(buildPath(velValues, velMin, velMax));
-  let velGrid = $derived(getGridLines(velMin, velMax));
+  let altitudeValues = $derived(valuesFor(history, 'altitude'));
+  let altitudeMin = $derived(altitudeValues.length ? Math.min(...altitudeValues, 0) : 0);
+  let altitudeMax = $derived(altitudeValues.length ? Math.max(...altitudeValues, 10) : 100);
+  let altitudePath = $derived(pointPath(altitudeValues, altitudeMin, altitudeMax));
+  let altitudeArea = $derived(
+    altitudePath
+      ? `${altitudePath} L${PADDING.left + CHART_W},${PADDING.top + CHART_H} L${PADDING.left},${PADDING.top + CHART_H} Z`
+      : '',
+  );
+  let altitudeGrid = $derived(gridLines(altitudeMin, altitudeMax));
+  let latest = $derived(history.at(-1));
 </script>
 
-<div class="charts-container">
-  <article class="chart-card">
-    <div class="chart-header">
-      <div class="chart-title">
-        <span class="dot cyan"></span>
-        相對高度
+<article class="flight-chart">
+  <section class="chart-section">
+    <header class="chart-header">
+      <div>
+        <span class="eyebrow">FLIGHT PROFILE</span>
+        <h2>高度軌跡</h2>
       </div>
-      <span class="chart-latest mono">
-        {altValues.length ? altValues[altValues.length - 1].toFixed(1) : '--'} m
-      </span>
-    </div>
-    <svg viewBox="0 0 {WIDTH} {HEIGHT}" preserveAspectRatio="none" class="chart-svg">
-      {#each altGrid as line}
-        <line x1={PADDING.left} y1={line.y} x2={PADDING.left + CHART_W} y2={line.y}
-              stroke="var(--surface-border)" stroke-width="0.5"/>
-        <text x={PADDING.left - 8} y={line.y + 4} text-anchor="end"
-              fill="var(--text-tertiary)" font-size="9" font-family="var(--font-mono)">
-          {line.value.toFixed(0)}
-        </text>
-      {/each}
-      {#if altPath}
-        <path d={altPath} fill="none" stroke="var(--accent-cyan)" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"/>
-      {:else}
-        <text x={WIDTH / 2} y={HEIGHT / 2} text-anchor="middle"
-              fill="var(--text-tertiary)" font-size="13">等待遙測資料…</text>
-      {/if}
-    </svg>
-  </article>
+      <div class="current-altitude">
+        <span>相對高度</span>
+        <strong class="mono">{latest ? latest.altitude.toFixed(1) : '--'} <small>m</small></strong>
+      </div>
+    </header>
 
-  <article class="chart-card">
-    <div class="chart-header">
-      <div class="chart-title">
-        <span class="dot green"></span>
-        垂直速度
-      </div>
-      <span class="chart-latest mono">
-        {velValues.length ? velValues[velValues.length - 1].toFixed(2) : '--'} m/s
-      </span>
+    <div class="chart-frame">
+      <svg viewBox="0 0 {WIDTH} {HEIGHT}" preserveAspectRatio="none" class="chart-svg" role="img" aria-label="最近一百筆遙測高度軌跡">
+        <defs>
+          <linearGradient id="altitude-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent-cyan)" stop-opacity="0.26" />
+            <stop offset="100%" stop-color="var(--accent-cyan)" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        {#each altitudeGrid as line}
+          <line
+            x1={PADDING.left}
+            y1={line.y}
+            x2={PADDING.left + CHART_W}
+            y2={line.y}
+            stroke="var(--surface-border)"
+            stroke-width="1"
+          />
+          <text
+            x={PADDING.left - 10}
+            y={line.y + 4}
+            text-anchor="end"
+            fill="var(--text-tertiary)"
+            font-size="10"
+            font-family="var(--font-mono)"
+          >{line.value.toFixed(0)}</text>
+        {/each}
+        {#if altitudePath}
+          <path d={altitudeArea} fill="url(#altitude-fill)" />
+          <path
+            d={altitudePath}
+            fill="none"
+            stroke="var(--accent-cyan)"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          />
+        {:else}
+          <text x={WIDTH / 2} y={HEIGHT / 2} text-anchor="middle" fill="var(--text-tertiary)" font-size="13">
+            等待遙測資料…
+          </text>
+        {/if}
+        <text x={PADDING.left} y={HEIGHT - 8} fill="var(--text-tertiary)" font-size="9">較早</text>
+        <text x={PADDING.left + CHART_W} y={HEIGHT - 8} text-anchor="end" fill="var(--text-tertiary)" font-size="9">現在</text>
+      </svg>
     </div>
-    <svg viewBox="0 0 {WIDTH} {HEIGHT}" preserveAspectRatio="none" class="chart-svg">
-      {#each velGrid as line}
-        <line x1={PADDING.left} y1={line.y} x2={PADDING.left + CHART_W} y2={line.y}
-              stroke="var(--surface-border)" stroke-width="0.5"/>
-        <text x={PADDING.left - 8} y={line.y + 4} text-anchor="end"
-              fill="var(--text-tertiary)" font-size="9" font-family="var(--font-mono)">
-          {line.value.toFixed(0)}
-        </text>
-      {/each}
-      {#if velPath}
-        <path d={velPath} fill="none" stroke="var(--accent-green)" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"/>
-      {:else}
-        <text x={WIDTH / 2} y={HEIGHT / 2} text-anchor="middle"
-              fill="var(--text-tertiary)" font-size="13">等待遙測資料…</text>
-      {/if}
-    </svg>
-  </article>
-</div>
+  </section>
+
+  <aside class="flight-summary" aria-label="即時飛行摘要">
+    <header>
+      <span class="eyebrow">LIVE SUMMARY</span>
+      <small class="mono">最近 {Math.min(history.length, MAX_POINTS)} 筆</small>
+    </header>
+    <dl>
+      <div>
+        <dt>垂直速度</dt>
+        <dd class="mono">{latest ? latest.verticalVelocity.toFixed(2) : '--'} <small>m/s</small></dd>
+      </div>
+      <div>
+        <dt>地面速度</dt>
+        <dd class="mono">{latest ? latest.groundSpeed.toFixed(1) : '--'} <small>m/s</small></dd>
+      </div>
+      <div>
+        <dt>氣壓</dt>
+        <dd class="mono">{latest ? latest.airPressure.toFixed(1) : '--'} <small>hPa</small></dd>
+      </div>
+      <div>
+        <dt>溫度</dt>
+        <dd class="mono">{latest ? latest.temperature.toFixed(1) : '--'} <small>°C</small></dd>
+      </div>
+    </dl>
+  </aside>
+</article>
 
 <style>
-  .charts-container {
+  .flight-chart {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--sp-4);
-  }
-
-  .chart-card {
-    padding: var(--sp-4);
+    grid-template-columns: minmax(0, 1fr) 188px;
+    overflow: hidden;
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
     box-shadow: var(--glass-shadow);
-    opacity: 0;
-    animation: slide-up 0.5s ease-out forwards;
-    animation-delay: 200ms;
   }
 
-  .chart-header {
+  .chart-section { min-width: 0; padding: var(--sp-5); }
+  .chart-header,
+  .flight-summary header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: var(--sp-3);
+    gap: var(--sp-3);
   }
 
-  .chart-title {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
+  .eyebrow {
+    display: block;
+    color: var(--accent-cyan);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: .14em;
+  }
+
+  h2 {
+    margin-top: 3px;
     color: var(--text-primary);
-    font-size: var(--fs-sm);
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    font-size: var(--fs-lg);
+    font-weight: 560;
+    letter-spacing: -.02em;
   }
 
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+  .current-altitude { text-align: right; }
+  .current-altitude > span { display: block; color: var(--text-tertiary); font-size: var(--fs-xs); }
+  .current-altitude strong { color: var(--text-primary); font-size: var(--fs-lg); font-weight: 520; }
+  small { color: var(--text-tertiary); font-size: 9px; font-weight: 450; }
+
+  .chart-frame {
+    min-height: 210px;
+    margin-top: var(--sp-3);
+    border-top: 1px solid var(--border-muted);
+    background-image: linear-gradient(90deg, transparent 49.8%, rgba(137, 169, 184, .045) 50%);
+    background-size: 25% 100%;
   }
 
-  .dot.cyan {
-    background: var(--accent-cyan);
-    box-shadow: 0 0 6px var(--accent-cyan-glow);
+  .chart-svg { display: block; width: 100%; height: 220px; }
+
+  .flight-summary {
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-5);
+    border-left: 1px solid var(--border-muted);
+    background: rgba(5, 13, 18, .34);
+  }
+  .flight-summary header { align-items: center; }
+  .flight-summary dl { display: grid; flex: 1; margin-top: var(--sp-4); }
+  .flight-summary dl > div {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-top: 1px solid var(--border-muted);
+  }
+  .flight-summary dt { color: var(--text-tertiary); font-size: var(--fs-xs); }
+  .flight-summary dd { margin-top: 3px; color: var(--text-primary); font-size: var(--fs-md); }
+
+  @media (max-width: 940px) {
+    .flight-chart { grid-template-columns: 1fr; }
+    .flight-summary { border-top: 1px solid var(--border-muted); border-left: 0; }
+    .flight-summary dl { grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); }
+    .flight-summary dl > div { padding-top: var(--sp-3); }
   }
 
-  .dot.green {
-    background: var(--accent-green);
-    box-shadow: 0 0 6px var(--accent-green-glow);
-  }
-
-  .chart-latest {
-    color: var(--text-secondary);
-    font-size: var(--fs-md);
-    font-weight: 600;
-  }
-
-  .chart-svg {
-    width: 100%;
-    height: 180px;
-    border-radius: var(--radius-sm);
-    background: rgba(0, 0, 0, 0.2);
-  }
-
-  @media (max-width: 1200px) {
-    .charts-container {
-      grid-template-columns: 1fr;
-    }
+  @media (max-width: 560px) {
+    .chart-section,
+    .flight-summary { padding: var(--sp-4); }
+    .flight-summary dl { grid-template-columns: repeat(2, 1fr); }
   }
 </style>

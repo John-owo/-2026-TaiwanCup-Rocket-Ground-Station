@@ -293,7 +293,6 @@ impl Receiver for SerialReceiver {
                                 telemetry_now_ms,
                             );
                             Self::emit_stats(&app_handle, &total_count, &failed_count);
-                            Self::save_to_database(&app_handle, &payload).await;
                         }
                         ParseResult::Complete(ParsedFrame::Ack(ack)) => {
                             let status = command_manager.handle_ack(&ack);
@@ -386,13 +385,11 @@ fn record_flight_telemetry(app_handle: &AppHandle, payload: &TelemetryPayload, n
         tracker.snapshot()
     };
     let _ = app_handle.emit("flight-stats", &stats);
-    let mut recorder_guard = state
-        .flight_recorder
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    if let Some(recorder) = recorder_guard.as_mut() {
-        if let Err(error) = recorder.record_telemetry(payload, &stats) {
-            log::error!("failed to write flight telemetry: {error}");
+    if let Some(storage) = app_handle.try_state::<crate::state::StorageState>() {
+        if let Err(error) =
+            storage.enqueue_telemetry(app_handle, payload.clone(), stats)
+        {
+            log::error!("failed to queue flight telemetry: {error}");
         }
     }
 }
@@ -411,16 +408,9 @@ fn record_parse_error(app_handle: &AppHandle, error: &str) {
 }
 
 fn log_flight_event(app_handle: &AppHandle, level: &str, message: &str) {
-    let Some(state) = app_handle.try_state::<crate::state::SerialState>() else {
-        return;
-    };
-    let mut recorder_guard = state
-        .flight_recorder
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    if let Some(recorder) = recorder_guard.as_mut() {
-        if let Err(error) = recorder.log_event(level, message) {
-            log::error!("failed to write flight event: {error}");
+    if let Some(storage) = app_handle.try_state::<crate::state::StorageState>() {
+        if let Err(error) = storage.enqueue_event(app_handle, level, message) {
+            log::error!("failed to queue flight event: {error}");
         }
     }
 }
@@ -505,41 +495,4 @@ impl SerialReceiver {
         }));
     }
 
-    async fn save_to_database(app_handle: &AppHandle, payload: &TelemetryPayload) {
-        let db = app_handle.try_state::<crate::state::DbPool>();
-        if let Some(pool) = db {
-            let pool = pool.inner().0.clone();
-            let payload = payload.clone();
-            tokio::spawn(async move {
-                let result = sqlx::query(
-                    "INSERT INTO telemetry (
-                        received_at, x_acceleration, y_acceleration, z_acceleration,
-                        x_angular_velocity, y_angular_velocity, z_angular_velocity,
-                        longitude, latitude, altitude,
-                        ground_speed, vertical_velocity, air_pressure, temperature
-                    ) VALUES (
-                        datetime('now'), ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13
-                    )",
-                )
-                .bind(payload.x_acceleration)
-                .bind(payload.y_acceleration)
-                .bind(payload.z_acceleration)
-                .bind(payload.x_angular_velocity)
-                .bind(payload.y_angular_velocity)
-                .bind(payload.z_angular_velocity)
-                .bind(payload.longitude)
-                .bind(payload.latitude)
-                .bind(payload.altitude)
-                .bind(payload.ground_speed)
-                .bind(payload.vertical_velocity)
-                .bind(payload.air_pressure)
-                .bind(payload.temperature)
-                .execute(&pool)
-                .await;
-                if let Err(error) = result {
-                    log::error!("failed to save telemetry to database: {error}");
-                }
-            });
-        }
-    }
 }

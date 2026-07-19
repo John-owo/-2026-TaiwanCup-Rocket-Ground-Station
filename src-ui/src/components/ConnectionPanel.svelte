@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { store } from '@/lib/stores.svelte';
   import { BAUD_RATES, BODY_AXES } from '@/lib/settings.js';
-  import { listSerialPorts, startMonitoring, stopMonitoring } from '@/lib/tauri';
+  import { listSerialPorts, stopTestMonitoring } from '@/lib/tauri';
   import type { AxisSign, SensorAxis } from '@/lib/types';
 
   let portPath = $state(store.settings.portPath);
@@ -21,6 +21,7 @@
   };
 
   let connected = $derived(store.connected);
+  let startDialogOpen = $derived(store.testStartRequest !== null);
   let latestSerialError = $derived(store.errors.at(-1)?.detail ?? '');
   let displayedError = $derived(errorMsg || latestSerialError);
   let savedPortUnavailable = $derived(
@@ -82,8 +83,8 @@
       loading = true;
       errorMsg = '';
       try {
-        await stopMonitoring();
-        store.setConnected(false);
+        const status = await stopTestMonitoring();
+        store.updateTestSessionStatus(status);
       } catch (error: any) {
         const detail = error?.detail || error?.message || String(error);
         if (detail.includes('no monitoring task running')) {
@@ -104,30 +105,14 @@
       return;
     }
 
-    loading = true;
     errorMsg = '';
-    try {
-      await startMonitoring(selectedPort, baudRate);
-      store.setConnected(true);
-    } catch (error: any) {
-      errorMsg = error?.detail || error?.message || String(error);
-      store.setConnected(false);
-    } finally {
-      loading = false;
-    }
+    store.requestTestStart(selectedPort, baudRate);
   }
 </script>
 
 <div class="connection-panel">
   <div class="panel-header">
-    <div class="header-icon" aria-hidden="true">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-        <path d="M2 17l10 5 10-5"/>
-        <path d="M2 12l10 5 10-5"/>
-      </svg>
-    </div>
-    <h3>序列連線</h3>
+    <div><span>LINK SETUP</span><h3>序列連線</h3></div>
     <div class="status-led" class:connected class:disconnected={!connected}>
       <div class="led-glow"></div>
     </div>
@@ -171,10 +156,10 @@
     </select>
   </div>
 
-  <button class="connect-btn" class:connected onclick={handleConnect} disabled={loading}>
+  <button class="connect-btn" class:connected onclick={handleConnect} disabled={loading || startDialogOpen}>
     {#if loading}
       <span class="spinner"></span>
-      連線中…
+      結束中…
     {:else if connected}
       中斷連線
     {:else}
@@ -233,9 +218,7 @@
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
     box-shadow: var(--glass-shadow);
-    animation: slide-up 0.4s ease-out forwards;
   }
 
   .panel-header,
@@ -246,11 +229,12 @@
     gap: var(--sp-3);
   }
 
-  .header-icon { display: flex; color: var(--accent-cyan); }
-  .panel-header h3 { flex: 1; color: var(--text-primary); font-size: var(--fs-md); font-weight: 600; }
+  .panel-header > div { flex: 1; }
+  .panel-header span { color: var(--accent-cyan); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; }
+  .panel-header h3 { margin-top: 3px; color: var(--text-primary); font-size: var(--fs-md); font-weight: 560; }
   .status-led { position: relative; width: 10px; height: 10px; border-radius: 50%; }
-  .status-led.connected { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green-glow); }
-  .status-led.disconnected { background: var(--accent-red); box-shadow: 0 0 8px var(--accent-red-glow); }
+  .status-led.connected { background: var(--accent-green); }
+  .status-led.disconnected { background: var(--accent-red); }
   .led-glow { position: absolute; inset: -4px; border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
   .status-led.connected .led-glow { background: var(--accent-green-dim); }
 
@@ -263,7 +247,7 @@
     padding: var(--sp-2) var(--sp-3);
     border: 1px solid var(--surface-border);
     border-radius: var(--radius-sm);
-    background: var(--surface);
+    background: var(--bg-field);
     color: var(--text-primary);
     font-family: var(--font-mono);
     font-size: var(--fs-base);
@@ -278,7 +262,7 @@
     padding: var(--sp-2) var(--sp-3);
     border: 1px solid var(--surface-border);
     border-radius: var(--radius-sm);
-    background: var(--surface-light);
+    background: transparent;
     color: var(--text-secondary);
     font-size: var(--fs-xs);
   }
@@ -294,12 +278,13 @@
     gap: var(--sp-2);
     padding: var(--sp-3) var(--sp-4);
     border-radius: var(--radius-sm);
-    background: linear-gradient(135deg, var(--accent-cyan), #0099cc);
-    color: #000;
+    border: 1px solid rgba(115, 210, 182, .42);
+    background: var(--accent-cyan);
+    color: #071016;
     font-size: var(--fs-base);
     font-weight: 700;
   }
-  .connect-btn.connected { background: linear-gradient(135deg, var(--accent-red), #cc2020); color: #fff; }
+  .connect-btn.connected { border-color: rgba(229, 109, 121, .5); background: var(--accent-red-dim); color: var(--accent-red); }
   .connect-btn:disabled { opacity: 0.6; }
   .spinner { width: 14px; height: 14px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; }
 

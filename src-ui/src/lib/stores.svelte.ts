@@ -16,6 +16,9 @@ import type {
   TelemetryPayload,
   CommandStatus,
   FlightStats,
+  StorageStatus,
+  TestSessionStatus,
+  TestStartRequest,
 } from './types';
 
 const MAX_HISTORY = 200;
@@ -75,6 +78,25 @@ function createStore() {
   });
   let lastPacketAt = $state<number | null>(null);
   let flightSessionDirectory = $state('');
+  let testSessionStatus = $state<TestSessionStatus>({
+    phase: 'disconnected',
+    testRunId: null,
+    directory: null,
+    purpose: null,
+    detail: null,
+  });
+  let storageStatus = $state<StorageStatus>({
+    phase: 'initializing',
+    dataPath: '',
+    availableBytes: null,
+    queueDepth: 0,
+    queueCapacity: 4096,
+    lastWriteUnixMs: null,
+    lastError: null,
+    droppedWrites: 0,
+  });
+  let testStartRequest = $state<TestStartRequest | null>(null);
+  let nextTestStartRequestId = 1;
 
   function persistSettings(next: AppSettings, axisChanged = false) {
     settings = saveSettings(storage, next);
@@ -98,6 +120,9 @@ function createStore() {
     get flightStats() { return flightStats; },
     get lastPacketAt() { return lastPacketAt; },
     get flightSessionDirectory() { return flightSessionDirectory; },
+    get testSessionStatus() { return testSessionStatus; },
+    get storageStatus() { return storageStatus; },
+    get testStartRequest() { return testStartRequest; },
 
     updateConnectionSettings(next: { portPath?: string; baudRate?: number }) {
       persistSettings({ ...settings, ...next });
@@ -156,6 +181,27 @@ function createStore() {
       flightSessionDirectory = directory;
     },
 
+    requestTestStart(path: string, baudRate: number) {
+      testStartRequest = { id: nextTestStartRequestId++, path, baudRate };
+    },
+
+    cancelTestStart() {
+      testStartRequest = null;
+    },
+
+    updateTestSessionStatus(status: TestSessionStatus) {
+      testSessionStatus = { ...status };
+      flightSessionDirectory = status.directory ?? flightSessionDirectory;
+      connected = status.phase === 'recording'
+        || status.phase === 'monitoring_unrecorded'
+        || status.phase === 'finishing';
+      if (connected) testStartRequest = null;
+    },
+
+    updateStorageStatus(status: StorageStatus) {
+      storageStatus = { ...status };
+    },
+
     addError(error: SerialError) {
       errors = [...errors, error].slice(-50);
     },
@@ -201,6 +247,14 @@ function createStore() {
       };
       lastPacketAt = null;
       flightSessionDirectory = '';
+      testSessionStatus = {
+        phase: 'disconnected',
+        testRunId: null,
+        directory: null,
+        purpose: null,
+        detail: null,
+      };
+      testStartRequest = null;
     },
   };
 }

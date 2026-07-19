@@ -90,11 +90,10 @@
     display: flex;
     align-items: center;
     gap: var(--sp-4);
-    min-height: 36px;
-    padding: var(--sp-2) var(--sp-5);
-    border-top: 1px solid var(--glass-border);
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
+    min-height: 32px;
+    padding: 6px 22px;
+    border-top: 1px solid var(--border-muted);
+    background: rgba(5, 12, 17, .9);
     flex-shrink: 0;
     overflow-x: auto;
   }
@@ -142,7 +141,6 @@
 
   .pulse-dot.active {
     background: var(--accent-green);
-    box-shadow: 0 0 8px var(--accent-green-glow);
     animation: pulse 1.5s ease-in-out infinite;
   }
 </style>

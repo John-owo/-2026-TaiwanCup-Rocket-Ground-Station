@@ -1,14 +1,10 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { store } from '@/lib/stores.svelte';
-  import {
-    createAttitudeEstimator,
-    mapSensorVector,
-  } from '@/lib/attitude.js';
+  import { createAttitudeEstimator, mapSensorVector } from '@/lib/attitude.js';
 
   const estimator = createAttitudeEstimator();
   let gyroRates = $state({ x: 0, y: 0, z: 0 });
-
   let pitch = $state(0);
   let roll = $state(0);
   let yaw = $state(0);
@@ -28,7 +24,6 @@
   $effect(() => {
     const revision = store.telemetryRevision;
     if (revision === 0) return;
-
     const snapshot = untrack(() => ({
       telemetry: store.telemetry,
       mapping: store.settings.axisMapping,
@@ -39,7 +34,6 @@
       z: snapshot.telemetry.zAngularVelocity,
     };
     gyroRates = mapSensorVector(rawGyro, snapshot.mapping);
-
     const next = estimator.update(
       {
         gyro: rawGyro,
@@ -52,7 +46,6 @@
       performance.now(),
       snapshot.mapping,
     );
-
     roll = next.roll;
     pitch = next.pitch;
     yaw = next.yaw;
@@ -65,351 +58,102 @@
     yaw = reset.yaw;
   }
 
-  const AH_SIZE = 200;
-  const AH_CENTER = AH_SIZE / 2;
-  const AH_RADIUS = 85;
-
-  let pitchOffset = $derived(Math.max(-AH_RADIUS, Math.min(AH_RADIUS, pitch * 1.5)));
-  let rollRad = $derived((-roll - 90) * Math.PI / 180);
-  let ptrX = $derived(AH_CENTER + Math.cos(rollRad) * (AH_RADIUS + 2));
-  let ptrY = $derived(AH_CENTER + Math.sin(rollRad) * (AH_RADIUS + 2));
-
-  const COMP_SIZE = 140;
-  const COMP_CENTER = COMP_SIZE / 2;
-  const COMP_RADIUS = 58;
-
-  const compassMarks = Array.from({ length: 36 }, (_, i) => {
-    const angle = i * 10;
-    const rad = (angle - 90) * Math.PI / 180;
-    const isCardinal = angle % 90 === 0;
-    const isMajor = angle % 30 === 0;
-    const innerR = isCardinal ? COMP_RADIUS - 16 : isMajor ? COMP_RADIUS - 12 : COMP_RADIUS - 8;
-    return {
-      angle,
-      x1: COMP_CENTER + Math.cos(rad) * innerR,
-      y1: COMP_CENTER + Math.sin(rad) * innerR,
-      x2: COMP_CENTER + Math.cos(rad) * COMP_RADIUS,
-      y2: COMP_CENTER + Math.sin(rad) * COMP_RADIUS,
-      isCardinal,
-      isMajor,
-      label: angle === 0 ? 'N' : angle === 90 ? 'E' : angle === 180 ? 'S' : angle === 270 ? 'W' : '',
-      labelX: COMP_CENTER + Math.cos(rad) * (COMP_RADIUS - 24),
-      labelY: COMP_CENTER + Math.sin(rad) * (COMP_RADIUS - 24),
-    };
-  });
-
-  let rocketLeanX = $derived(Math.max(-26, Math.min(26, roll * 0.35)));
-  let rocketLeanY = $derived(Math.max(-20, Math.min(20, -pitch * 0.35)));
-  let rocketTransform = $derived(`translate(${110 + rocketLeanX} ${118 + rocketLeanY}) rotate(${roll})`);
-  let noseTransform = $derived(`rotate(${yaw}, 110, 118)`);
+  let rocketLeanX = $derived(Math.max(-18, Math.min(18, roll * .24)));
+  let rocketLeanY = $derived(Math.max(-14, Math.min(14, -pitch * .24)));
+  let rocketTransform = $derived(`translate(${82 + rocketLeanX} ${71 + rocketLeanY}) rotate(${roll})`);
+  let headingTransform = $derived(`rotate(${yaw}, 82, 71)`);
 </script>
 
-<div class="attitude-container">
-  <div class="attitude-card rocket-card">
-    <div class="card-header">
-      <span class="header-label">火箭姿態</span>
-      <button class="zero-btn" onclick={zeroAttitude}>歸零</button>
+<article class="attitude-strip">
+  <header>
+    <div>
+      <span class="eyebrow">ATTITUDE ESTIMATE</span>
+      <h2>火箭姿態</h2>
     </div>
-    <div class="rocket-wrapper">
-      <svg viewBox="0 0 220 220" class="rocket-svg">
-        <defs>
-          <radialGradient id="rocket-bg" cx="50%" cy="50%" r="60%">
-            <stop offset="0%" stop-color="var(--surface-light)" stop-opacity="0.9"/>
-            <stop offset="100%" stop-color="var(--surface)" stop-opacity="0.15"/>
-          </radialGradient>
-          <linearGradient id="rocket-body" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#f4fbff"/>
-            <stop offset="100%" stop-color="#7fbce8"/>
-          </linearGradient>
-        </defs>
+    <button class="zero-btn" onclick={zeroAttitude}>姿態歸零</button>
+  </header>
 
-        <circle cx="110" cy="118" r="86" fill="url(#rocket-bg)" stroke="var(--glass-border)" stroke-width="1"/>
-        <circle cx="110" cy="118" r="58" fill="none" stroke="var(--surface-border)" stroke-width="1"/>
-        <line x1="24" y1="118" x2="196" y2="118" stroke="var(--surface-border)" stroke-width="1"/>
-        <line x1="110" y1="32" x2="110" y2="204" stroke="var(--surface-border)" stroke-width="1"/>
-
-        <g transform={noseTransform} opacity="0.55">
-          <path d="M110 34 L104 52 L116 52 Z" fill="var(--accent-cyan)"/>
-        </g>
-
-        <g transform={rocketTransform} class="rocket-model">
-          <path d="M0 -72 C-13 -55 -15 -32 -13 -8 L13 -8 C15 -32 13 -55 0 -72 Z"
-                fill="url(#rocket-body)" stroke="var(--accent-cyan)" stroke-width="1.4"/>
-          <rect x="-12" y="-8" width="24" height="66" rx="8"
-                fill="rgba(127,188,232,0.86)" stroke="var(--accent-cyan)" stroke-width="1.2"/>
-          <path d="M-12 34 L-34 63 L-10 54 Z" fill="var(--accent-cyan)" opacity="0.72"/>
-          <path d="M12 34 L34 63 L10 54 Z" fill="var(--accent-cyan)" opacity="0.72"/>
-          <path d="M-7 58 L0 76 L7 58 Z" fill="var(--accent-orange)" opacity="0.85"/>
-          <line x1="-8" y1="-38" x2="8" y2="-38" stroke="rgba(10,14,26,0.55)" stroke-width="2"/>
-          <line x1="-10" y1="8" x2="10" y2="8" stroke="rgba(10,14,26,0.45)" stroke-width="2"/>
-        </g>
-      </svg>
-    </div>
-    <div class="attitude-numbers">
-      <span class="mono">俯仰 {pitch.toFixed(1)} deg</span>
-      <span class="mono">滾轉 {roll.toFixed(1)} deg</span>
-      <span class="mono">偏航 {yaw.toFixed(1)} deg</span>
-    </div>
+  <div class="attitude-visual" aria-label="火箭即時姿態示意">
+    <svg viewBox="0 0 164 142" role="img">
+      <circle cx="82" cy="71" r="55" fill="none" stroke="var(--surface-border)" />
+      <circle cx="82" cy="71" r="34" fill="none" stroke="var(--surface-border)" stroke-dasharray="2 5" />
+      <line x1="16" y1="71" x2="148" y2="71" stroke="var(--surface-border)" />
+      <line x1="82" y1="5" x2="82" y2="137" stroke="var(--surface-border)" />
+      <g transform={headingTransform} opacity=".7">
+        <path d="M82 9 L77 21 H87 Z" fill="var(--accent-cyan)" />
+      </g>
+      <g transform={rocketTransform} class="rocket-model">
+        <path d="M0 -36 C-8 -27 -9 -14 -8 2 H8 C9 -14 8 -27 0 -36 Z" fill="#d9e7eb" />
+        <rect x="-8" y="1" width="16" height="34" rx="5" fill="#7599a5" />
+        <path d="M-8 22 L-18 36 L-6 31 Z M8 22 L18 36 L6 31 Z" fill="var(--accent-cyan)" />
+        <path d="M-4 35 L0 44 L4 35 Z" fill="var(--accent-orange)" />
+      </g>
+    </svg>
   </div>
 
-  <div class="attitude-card">
-    <div class="card-header">
-      <span class="header-label">姿態</span>
-      <span class="header-value mono">俯仰 {pitch.toFixed(1)} / 滾轉 {roll.toFixed(1)} deg</span>
-    </div>
-    <div class="horizon-wrapper">
-      <svg viewBox="0 0 {AH_SIZE} {AH_SIZE}" class="horizon-svg">
-        <defs>
-          <clipPath id="ah-clip">
-            <circle cx={AH_CENTER} cy={AH_CENTER} r={AH_RADIUS}/>
-          </clipPath>
-          <linearGradient id="sky-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#0066cc"/>
-            <stop offset="100%" stop-color="#0044aa"/>
-          </linearGradient>
-          <linearGradient id="ground-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#885522"/>
-            <stop offset="100%" stop-color="#664411"/>
-          </linearGradient>
-        </defs>
+  <dl class="angles">
+    <div><dt>滾轉 ROLL</dt><dd class="mono">{roll.toFixed(1)}°</dd></div>
+    <div><dt>俯仰 PITCH</dt><dd class="mono">{pitch.toFixed(1)}°</dd></div>
+    <div><dt>偏航 YAW</dt><dd class="mono">{yaw.toFixed(1)}°</dd></div>
+  </dl>
 
-        <circle cx={AH_CENTER} cy={AH_CENTER} r={AH_RADIUS + 4}
-                fill="none" stroke="var(--surface-lighter)" stroke-width="2"/>
-        <circle cx={AH_CENTER} cy={AH_CENTER} r={AH_RADIUS}
-                fill="none" stroke="var(--glass-border)" stroke-width="1"/>
-
-        <g clip-path="url(#ah-clip)" transform="rotate({-roll}, {AH_CENTER}, {AH_CENTER})">
-          <rect x="0" y={-AH_SIZE} width={AH_SIZE} height={AH_SIZE + AH_CENTER + pitchOffset}
-                fill="url(#sky-grad)"/>
-          <rect x="0" y={AH_CENTER + pitchOffset} width={AH_SIZE} height={AH_SIZE * 2}
-                fill="url(#ground-grad)"/>
-          <line x1="0" y1={AH_CENTER + pitchOffset} x2={AH_SIZE} y2={AH_CENTER + pitchOffset}
-                stroke="#fff" stroke-width="1.5" opacity="0.8"/>
-
-          {#each [-40, -20, -10, 10, 20, 40] as deg}
-            {@const markY = AH_CENTER + pitchOffset - deg * 1.5}
-            <line x1={AH_CENTER - 20} y1={markY} x2={AH_CENTER + 20} y2={markY}
-                  stroke="#fff" stroke-width="1" opacity="0.5"/>
-            <text x={AH_CENTER + 24} y={markY + 3} fill="#fff" font-size="8" opacity="0.6">{deg} deg</text>
-          {/each}
-        </g>
-
-        <line x1={AH_CENTER - 35} y1={AH_CENTER} x2={AH_CENTER - 12} y2={AH_CENTER}
-              stroke="var(--accent-cyan)" stroke-width="2.5" stroke-linecap="round"/>
-        <line x1={AH_CENTER + 12} y1={AH_CENTER} x2={AH_CENTER + 35} y2={AH_CENTER}
-              stroke="var(--accent-cyan)" stroke-width="2.5" stroke-linecap="round"/>
-        <circle cx={AH_CENTER} cy={AH_CENTER} r="3" fill="var(--accent-cyan)"/>
-
-        {#each [-60, -45, -30, -20, -10, 0, 10, 20, 30, 45, 60] as deg}
-          {@const rad = (deg - 90) * Math.PI / 180}
-          {@const r1 = AH_RADIUS - 2}
-          {@const r2 = deg % 30 === 0 ? AH_RADIUS + 8 : AH_RADIUS + 5}
-          <line
-            x1={AH_CENTER + Math.cos(rad) * r1}
-            y1={AH_CENTER + Math.sin(rad) * r1}
-            x2={AH_CENTER + Math.cos(rad) * r2}
-            y2={AH_CENTER + Math.sin(rad) * r2}
-            stroke={deg === 0 ? 'var(--accent-cyan)' : 'var(--text-tertiary)'}
-            stroke-width={deg % 30 === 0 ? 2 : 1}
-          />
-        {/each}
-
-        <circle cx={ptrX} cy={ptrY} r="4" fill="var(--accent-cyan)"/>
-      </svg>
-    </div>
-  </div>
-
-  <div class="attitude-card">
-    <div class="card-header">
-      <span class="header-label">相對航向</span>
-      <span class="header-value mono">{yaw.toFixed(1)} deg</span>
-    </div>
-    <div class="compass-wrapper">
-      <svg viewBox="0 0 {COMP_SIZE} {COMP_SIZE}" class="compass-svg">
-        <defs>
-          <radialGradient id="comp-bg">
-            <stop offset="0%" stop-color="var(--surface-light)" stop-opacity="0.8"/>
-            <stop offset="100%" stop-color="var(--surface)" stop-opacity="0.6"/>
-          </radialGradient>
-        </defs>
-
-        <circle cx={COMP_CENTER} cy={COMP_CENTER} r={COMP_RADIUS + 2}
-                fill="none" stroke="var(--surface-lighter)" stroke-width="1.5"/>
-        <circle cx={COMP_CENTER} cy={COMP_CENTER} r={COMP_RADIUS}
-                fill="url(#comp-bg)"/>
-
-        <g transform="rotate({-yaw}, {COMP_CENTER}, {COMP_CENTER})">
-          {#each compassMarks as mark}
-            <line x1={mark.x1} y1={mark.y1} x2={mark.x2} y2={mark.y2}
-                  stroke={mark.isCardinal ? 'var(--accent-cyan)' : 'var(--text-tertiary)'}
-                  stroke-width={mark.isCardinal ? 2 : mark.isMajor ? 1.5 : 0.8}/>
-            {#if mark.label}
-              <text x={mark.labelX} y={mark.labelY + 4} text-anchor="middle"
-                    fill={mark.label === 'N' ? 'var(--accent-red)' : 'var(--accent-cyan)'}
-                    font-size="11" font-weight="700" font-family="var(--font-mono)">
-                {mark.label}
-              </text>
-            {/if}
-          {/each}
-        </g>
-
-        <polygon points="{COMP_CENTER},{COMP_CENTER - COMP_RADIUS - 8} {COMP_CENTER - 5},{COMP_CENTER - COMP_RADIUS + 2} {COMP_CENTER + 5},{COMP_CENTER - COMP_RADIUS + 2}"
-                 fill="var(--accent-cyan)"/>
-        <circle cx={COMP_CENTER} cy={COMP_CENTER} r="3" fill="var(--accent-cyan)" opacity="0.6"/>
-      </svg>
-    </div>
-  </div>
-
-  <div class="attitude-card angular-readout">
-    <div class="card-header">
-      <span class="header-label">角速度</span>
-    </div>
-    <div class="angular-values">
-      <div class="angular-item">
-        <span class="angular-label">俯仰</span>
-        <span class="angular-val mono">{gyroRates.y.toFixed(1)}</span>
-        <span class="angular-unit">deg/s</span>
-      </div>
-      <div class="angular-item">
-        <span class="angular-label">滾轉</span>
-        <span class="angular-val mono">{gyroRates.x.toFixed(1)}</span>
-        <span class="angular-unit">deg/s</span>
-      </div>
-      <div class="angular-item">
-        <span class="angular-label">偏航</span>
-        <span class="angular-val mono">{gyroRates.z.toFixed(1)}</span>
-        <span class="angular-unit">deg/s</span>
-      </div>
-    </div>
-  </div>
-</div>
+  <dl class="rates">
+    <div><dt>ROLL RATE</dt><dd class="mono">{gyroRates.x.toFixed(1)}°/s</dd></div>
+    <div><dt>PITCH RATE</dt><dd class="mono">{gyroRates.y.toFixed(1)}°/s</dd></div>
+    <div><dt>YAW RATE</dt><dd class="mono">{gyroRates.z.toFixed(1)}°/s</dd></div>
+  </dl>
+</article>
 
 <style>
-  .attitude-container {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-4);
-  }
-
-  .attitude-card {
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
+  .attitude-strip {
+    display: grid;
+    grid-template-columns: 150px 146px minmax(300px, 1fr) minmax(230px, .7fr);
+    align-items: center;
+    min-height: 148px;
+    overflow: hidden;
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
-    padding: var(--sp-4);
+    background: var(--glass-bg);
     box-shadow: var(--glass-shadow);
-    animation: slide-up 0.5s ease-out forwards;
-    opacity: 0;
-    animation-delay: 300ms;
   }
 
-  .rocket-card {
-    animation-delay: 220ms;
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--sp-3);
-  }
-
-  .header-label {
-    font-size: var(--fs-xs);
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  .header-value {
-    font-size: var(--fs-sm);
-    color: var(--accent-cyan);
-    font-weight: 600;
-  }
-
+  header { align-self: stretch; padding: var(--sp-5); border-right: 1px solid var(--border-muted); }
+  .eyebrow { color: var(--accent-cyan); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; }
+  h2 { margin-top: 5px; font-size: var(--fs-lg); font-weight: 560; }
   .zero-btn {
-    padding: var(--sp-1) var(--sp-3);
-    border: 1px solid var(--accent-cyan-dim);
+    margin-top: var(--sp-5);
+    padding: 7px 10px;
+    border: 1px solid var(--border);
     border-radius: var(--radius-full);
-    background: var(--surface);
-    color: var(--accent-cyan);
-    font-size: var(--fs-xs);
-  }
-
-  .horizon-wrapper,
-  .compass-wrapper,
-  .rocket-wrapper {
-    display: flex;
-    justify-content: center;
-  }
-
-  .rocket-svg {
-    width: 220px;
-    height: 220px;
-  }
-
-  .rocket-model {
-    filter: drop-shadow(0 0 12px var(--accent-cyan-glow));
-    transition: transform 120ms linear;
-  }
-
-  .attitude-numbers {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--sp-1);
-    margin-top: var(--sp-3);
+    background: transparent;
     color: var(--text-secondary);
     font-size: var(--fs-xs);
   }
+  .zero-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
 
-  .horizon-svg {
-    width: 200px;
-    height: 200px;
+  .attitude-visual { display: grid; height: 142px; place-items: center; border-right: 1px solid var(--border-muted); }
+  .attitude-visual svg { width: 142px; height: 132px; }
+  .rocket-model { transition: transform 120ms linear; }
+
+  dl { display: grid; margin: 0; }
+  dl > div { min-width: 0; }
+  dt { color: var(--text-tertiary); font-size: 9px; letter-spacing: .06em; }
+  dd { margin-top: 2px; color: var(--text-primary); }
+  .angles { grid-template-columns: repeat(3, 1fr); gap: var(--sp-4); padding: var(--sp-5); }
+  .angles dd { font-size: clamp(18px, 1.6vw, 25px); }
+  .rates { gap: var(--sp-2); align-self: stretch; padding: var(--sp-4) var(--sp-5); border-left: 1px solid var(--border-muted); background: rgba(5, 13, 18, .3); }
+  .rates > div { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+  .rates dd { font-size: var(--fs-sm); }
+
+  @media (max-width: 1100px) {
+    .attitude-strip { grid-template-columns: 140px 138px 1fr; }
+    .rates { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border-muted); border-left: 0; }
   }
 
-  .compass-svg {
-    width: 140px;
-    height: 140px;
-  }
-
-  .angular-readout {
-    animation-delay: 400ms;
-  }
-
-  .angular-values {
-    display: flex;
-    gap: var(--sp-4);
-    justify-content: space-around;
-  }
-
-  .angular-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-  }
-
-  .angular-label {
-    font-size: 9px;
-    font-weight: 600;
-    color: var(--text-tertiary);
-    letter-spacing: 0.1em;
-  }
-
-  .angular-val {
-    font-size: var(--fs-lg);
-    font-weight: 700;
-    color: var(--text-primary);
-    font-family: var(--font-mono);
-  }
-
-  .angular-unit {
-    font-size: var(--fs-xs);
-    color: var(--text-tertiary);
-  }
-
-  .mono {
-    font-family: var(--font-mono);
+  @media (max-width: 680px) {
+    .attitude-strip { grid-template-columns: 1fr 1fr; }
+    header { border-bottom: 1px solid var(--border-muted); }
+    .attitude-visual { border-right: 0; border-bottom: 1px solid var(--border-muted); }
+    .angles { grid-column: 1 / -1; }
   }
 </style>

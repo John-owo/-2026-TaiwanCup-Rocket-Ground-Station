@@ -1,8 +1,11 @@
+use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 use tokio_util::sync::CancellationToken;
 use tokio::sync::mpsc;
+use tokio::sync::Notify;
 use crate::infrastructures::serial::command::CommandRequest;
-use crate::infrastructures::flight::{FlightRecorder, FlightStatsTracker};
+use crate::infrastructures::flight::FlightStatsTracker;
+use crate::models::response::TestSessionStatus;
 
 /// 序列埠監控的應用程式狀態
 /// 透過 Tauri managed state 在所有 command 間共享
@@ -20,7 +23,10 @@ pub struct SerialState {
     /// 總封包計數
     pub total_packet_count: Arc<Mutex<u64>>,
     pub flight_stats: Arc<Mutex<FlightStatsTracker>>,
-    pub flight_recorder: Arc<Mutex<Option<FlightRecorder>>>,
+    pub test_session_status: Arc<Mutex<TestSessionStatus>>,
+    pub manual_stop_requested: AtomicBool,
+    pub terminal_notify: Arc<Notify>,
+    pub shutdown_started: AtomicBool,
 }
 
 impl SerialState {
@@ -33,7 +39,10 @@ impl SerialState {
             verification_failed_count: Arc::new(Mutex::new(0)),
             total_packet_count: Arc::new(Mutex::new(0)),
             flight_stats: Arc::new(Mutex::new(FlightStatsTracker::default())),
-            flight_recorder: Arc::new(Mutex::new(None)),
+            test_session_status: Arc::new(Mutex::new(TestSessionStatus::default())),
+            manual_stop_requested: AtomicBool::new(false),
+            terminal_notify: Arc::new(Notify::new()),
+            shutdown_started: AtomicBool::new(false),
         }
     }
 }
@@ -48,10 +57,10 @@ impl Default for SerialState {
             verification_failed_count: Arc::new(Mutex::new(0)),
             total_packet_count: Arc::new(Mutex::new(0)),
             flight_stats: Arc::new(Mutex::new(FlightStatsTracker::default())),
-            flight_recorder: Arc::new(Mutex::new(None)),
+            test_session_status: Arc::new(Mutex::new(TestSessionStatus::default())),
+            manual_stop_requested: AtomicBool::new(false),
+            terminal_notify: Arc::new(Notify::new()),
+            shutdown_started: AtomicBool::new(false),
         }
     }
 }
-
-/// 資料庫連線池包裝
-pub struct DbPool(pub sqlx::SqlitePool);

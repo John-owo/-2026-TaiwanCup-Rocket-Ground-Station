@@ -91,6 +91,7 @@ pub enum ParsedFrame {
 #[serde(rename_all = "camelCase")]
 pub struct DbTelemetry {
     pub id: i64,
+    pub test_run_id: Option<String>,
     pub received_at: String,
     pub x_acceleration: f64,
     pub y_acceleration: f64,
@@ -105,6 +106,63 @@ pub struct DbTelemetry {
     pub vertical_velocity: f64,
     pub air_pressure: f64,
     pub temperature: f64,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TestRunPhase {
+    Disconnected,
+    Starting,
+    Recording,
+    MonitoringUnrecorded,
+    Finishing,
+    Completed,
+    Interrupted,
+    Failed,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct TestSessionStatus {
+    pub phase: TestRunPhase,
+    pub test_run_id: Option<String>,
+    pub directory: Option<String>,
+    pub purpose: Option<String>,
+    pub detail: Option<String>,
+}
+
+impl Default for TestSessionStatus {
+    fn default() -> Self {
+        Self {
+            phase: TestRunPhase::Disconnected,
+            test_run_id: None,
+            directory: None,
+            purpose: None,
+            detail: None,
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum StoragePhase {
+    Initializing,
+    Healthy,
+    Degraded,
+    Failed,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageStatus {
+    pub phase: StoragePhase,
+    pub data_path: String,
+    pub available_bytes: Option<u64>,
+    pub queue_depth: usize,
+    pub queue_capacity: usize,
+    pub last_write_unix_ms: Option<u64>,
+    pub last_error: Option<String>,
+    pub dropped_writes: u64,
 }
 
 /// Tauri command 的標準回傳型別

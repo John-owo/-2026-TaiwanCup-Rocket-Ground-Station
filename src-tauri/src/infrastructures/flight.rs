@@ -12,6 +12,7 @@ const LINK_LOSS_THRESHOLD_MS: u64 = 4_500;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FlightSessionMetadata {
+    pub purpose: String,
     pub initial_battery_voltage: f32,
     pub location: String,
     pub operator: String,
@@ -134,6 +135,7 @@ fn current_span(first: Option<u32>, last: Option<u32>) -> u64 {
 }
 
 pub struct FlightRecorder {
+    test_run_id: String,
     directory: PathBuf,
     csv: BufWriter<File>,
     log: BufWriter<File>,
@@ -141,37 +143,50 @@ pub struct FlightRecorder {
 }
 
 impl FlightRecorder {
-    pub fn start(root: &Path, metadata: FlightSessionMetadata) -> Result<Self, String> {
-        if !metadata.initial_battery_voltage.is_finite() || metadata.initial_battery_voltage <= 0.0 {
-            return Err("initial battery voltage must be a positive finite value".to_string());
-        }
-        if metadata.location.trim().is_empty() || metadata.operator.trim().is_empty() {
-            return Err("location and operator are required".to_string());
-        }
+    pub fn start(
+        root: &Path,
+        test_run_id: String,
+        metadata: FlightSessionMetadata,
+    ) -> Result<Self, String> {
+        metadata.validate()?;
         let timestamp = unix_ms();
+        let short_id = test_run_id.chars().take(8).collect::<String>();
         let location = sanitize_component(&metadata.location);
-        let directory = root.join("flight_sessions").join(format!("{timestamp}_{location}"));
-        fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
-        let csv_file = OpenOptions::new()
-            .create_new(true)
-            .write(true)
-            .open(directory.join("flight_data.csv"))
-            .map_err(|error| error.to_string())?;
-        let log_file = OpenOptions::new()
-            .create_new(true)
-            .write(true)
-            .open(directory.join("system.log"))
-            .map_err(|error| error.to_string())?;
-        let mut recorder = Self {
-            directory,
-            csv: BufWriter::new(csv_file),
-            log: BufWriter::new(log_file),
-            metadata,
-        };
-        recorder.write_csv_header()?;
-        recorder.log_event("INFO", "flight session started")?;
-        recorder.write_summary(&FlightStats::default(), false)?;
-        Ok(recorder)
+        let sessions_root = root.join("flight_sessions");
+        fs::create_dir_all(&sessions_root).map_err(|error| error.to_string())?;
+        let directory = sessions_root.join(format!("{timestamp}_{short_id}_{location}"));
+        fs::create_dir(&directory).map_err(|error| error.to_string())?;
+        let result = (|| {
+            let csv_file = OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .open(directory.join("flight_data.csv"))
+                .map_err(|error| error.to_string())?;
+            let log_file = OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .open(directory.join("system.log"))
+                .map_err(|error| error.to_string())?;
+            let mut recorder = Self {
+                test_run_id,
+                directory: directory.clone(),
+                csv: BufWriter::new(csv_file),
+                log: BufWriter::new(log_file),
+                metadata,
+            };
+            recorder.write_csv_header()?;
+            recorder.log_event("INFO", "flight session started")?;
+            recorder.write_summary(&FlightStats::default(), "recording", None)?;
+            Ok(recorder)
+        })();
+        if result.is_err() {
+            let _ = fs::remove_dir_all(&directory);
+        }
+        result
+    }
+
+    pub fn cleanup_failed_start(&self) -> Result<(), String> {
+        fs::remove_dir_all(&self.directory).map_err(|error| error.to_string())
     }
 
     pub fn directory(&self) -> &Path {
@@ -198,7 +213,7 @@ impl FlightRecorder {
         )
         .map_err(|error| error.to_string())?;
         self.csv.flush().map_err(|error| error.to_string())?;
-        self.write_summary(stats, false)
+        self.write_summary(stats, "recording", None)
     }
 
     pub fn log_event(&mut self, level: &str, message: &str) -> Result<(), String> {
@@ -207,9 +222,17 @@ impl FlightRecorder {
         self.log.flush().map_err(|error| error.to_string())
     }
 
-    pub fn finish(&mut self, stats: &FlightStats) -> Result<(), String> {
-        self.log_event("INFO", "flight session stopped")?;
-        self.write_summary(stats, true)
+    pub fn finish(
+        &mut self,
+        stats: &FlightStats,
+        status: &str,
+        detail: Option<&str>,
+    ) -> Result<(), String> {
+        self.log_event(
+            if status == "completed" { "INFO" } else { "ERROR" },
+            detail.unwrap_or("flight session stopped"),
+        )?;
+        self.write_summary(stats, status, detail)
     }
 
     fn write_csv_header(&mut self) -> Result<(), String> {
@@ -221,10 +244,18 @@ impl FlightRecorder {
         self.csv.flush().map_err(|error| error.to_string())
     }
 
-    fn write_summary(&self, stats: &FlightStats, completed: bool) -> Result<(), String> {
+    fn write_summary(
+        &self,
+        stats: &FlightStats,
+        status: &str,
+        detail: Option<&str>,
+    ) -> Result<(), String> {
         let summary = serde_json::json!({
             "updatedUnixMs": unix_ms(),
-            "completed": completed,
+            "completed": status == "completed",
+            "status": status,
+            "testRunId": self.test_run_id,
+            "detail": detail,
             "metadata": self.metadata,
             "stats": stats,
         });
@@ -236,6 +267,21 @@ impl FlightRecorder {
             .map_err(|error| error.to_string())?;
         serde_json::to_writer_pretty(&mut file, &summary).map_err(|error| error.to_string())?;
         file.flush().map_err(|error| error.to_string())
+    }
+}
+
+impl FlightSessionMetadata {
+    pub fn validate(&self) -> Result<(), String> {
+        if !self.initial_battery_voltage.is_finite() || self.initial_battery_voltage <= 0.0 {
+            return Err("initial battery voltage must be a positive finite value".to_string());
+        }
+        if self.purpose.trim().is_empty()
+            || self.location.trim().is_empty()
+            || self.operator.trim().is_empty()
+        {
+            return Err("purpose, location and operator are required".to_string());
+        }
+        Ok(())
     }
 }
 
@@ -270,6 +316,27 @@ mod tests {
     use super::*;
 
     #[test]
+    fn metadata_requires_purpose_operator_location_and_positive_voltage() {
+        let valid = FlightSessionMetadata {
+            purpose: "timer test".to_string(),
+            initial_battery_voltage: 8.2,
+            location: "lab".to_string(),
+            operator: "tester".to_string(),
+            notes: String::new(),
+        };
+        assert!(valid.validate().is_ok());
+        for invalid in [
+            FlightSessionMetadata { purpose: " ".to_string(), ..valid.clone() },
+            FlightSessionMetadata { operator: "".to_string(), ..valid.clone() },
+            FlightSessionMetadata { location: "".to_string(), ..valid.clone() },
+            FlightSessionMetadata { initial_battery_voltage: 0.0, ..valid.clone() },
+            FlightSessionMetadata { initial_battery_voltage: f32::NAN, ..valid.clone() },
+        ] {
+            assert!(invalid.validate().is_err());
+        }
+    }
+
+    #[test]
     fn statistics_separate_missing_duplicate_crc_link_loss_and_restart() {
         let mut tracker = FlightStatsTracker::default();
         tracker.observe_telemetry(1, 10, 0);
@@ -293,12 +360,18 @@ mod tests {
     fn recorder_flushes_csv_log_and_summary_for_mid_run_readback() {
         let root = std::env::temp_dir().join(format!("tasa-flight-recorder-{}", unix_ms()));
         let metadata = FlightSessionMetadata {
+            purpose: "storage test".to_string(),
             initial_battery_voltage: 8.2,
             location: "lab".to_string(),
             operator: "tester".to_string(),
             notes: "automated".to_string(),
         };
-        let mut recorder = FlightRecorder::start(&root, metadata).unwrap();
+        let mut recorder = FlightRecorder::start(
+            &root,
+            uuid::Uuid::new_v4().to_string(),
+            metadata,
+        )
+        .unwrap();
         let directory = recorder.directory().to_path_buf();
         recorder
             .record_telemetry(&telemetry(), &FlightStats { telemetry_packets: 1, ..Default::default() })
