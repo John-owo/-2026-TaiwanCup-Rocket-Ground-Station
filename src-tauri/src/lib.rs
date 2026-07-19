@@ -1,108 +1,99 @@
-// ─── Module Declarations ─────────────────────────────────────────────────────
 mod commands;
 mod infrastructures;
 mod models;
 mod services;
 pub mod state;
 
-// ─── Imports ─────────────────────────────────────────────────────────────────
-use state::{DbPool, SerialState};
+use models::response::TestRunPhase;
+use state::{SerialState, StorageState};
+use std::sync::atomic::Ordering;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .manage(SerialState::default())
         .setup(|app| {
-            // ── Logging Plugin ───────────────────────────────────────────
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
+            app.handle().plugin(
+                tauri_plugin_log::Builder::default()
+                    .level(log::LevelFilter::Info)
+                    .build(),
+            )?;
 
-            // ── SQLite Database Setup (non-blocking) ─────────────────────
+            let app_dir = app
+                .handle()
+                .path()
+                .app_data_dir()
+                .map_err(|error| error.to_string())?;
+            let (storage_state, storage_receiver) = StorageState::new(app_dir);
+            app.manage(storage_state);
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                match init_database(&app_handle).await {
-                    Ok(pool) => {
-                        app_handle.manage(DbPool(pool));
-                        log::info!("SQLite database initialized successfully");
-                    }
-                    Err(e) => {
-                        log::error!("Failed to initialize database: {}", e);
-                        if let Ok(pool) = sqlx::SqlitePool::connect("sqlite::memory:").await {
-                            app_handle.manage(DbPool(pool));
-                        }
-                    }
+                if let Some(storage) = app_handle.try_state::<StorageState>() {
+                    storage
+                        .initialize(app_handle.clone(), storage_receiver)
+                        .await;
                 }
             });
-
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::serial::list_serial_ports,
-            commands::serial::start_monitoring,
-            commands::serial::stop_monitoring,
+            commands::serial::start_test_monitoring,
+            commands::serial::stop_test_monitoring,
+            commands::serial::get_test_session_status,
+            commands::serial::get_storage_status,
             commands::serial::set_timer,
             commands::serial::force_release,
-            commands::serial::start_flight_session,
-            commands::serial::stop_flight_session,
             commands::serial::get_flight_stats,
             commands::serial::get_telemetry_history,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
 
-/// 初始化 SQLite 資料庫並建立遙測資料表
-async fn init_database(app_handle: &tauri::AppHandle) -> Result<sqlx::SqlitePool, String> {
-
-    // 取得應用程式資料目錄
-    let app_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("failed to get app data dir: {}", e))?;
-
-    // 確保目錄存在
-    std::fs::create_dir_all(&app_dir)
-        .map_err(|e| format!("failed to create app data dir: {}", e))?;
-
-    let db_path = app_dir.join("telemetry.db");
-    let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
-
-    log::info!("database path: {}", db_path.display());
-
-    // 建立連線池
-    let pool = sqlx::SqlitePool::connect(&db_url)
-        .await
-        .map_err(|e| format!("failed to connect to database: {}", e))?;
-
-    // 建立遙測資料表（如不存在）
-    sqlx::query(
-        "CREATE TABLE IF NOT EXISTS telemetry (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            received_at TEXT NOT NULL DEFAULT (datetime('now')),
-            x_acceleration REAL NOT NULL,
-            y_acceleration REAL NOT NULL,
-            z_acceleration REAL NOT NULL,
-            x_angular_velocity REAL NOT NULL,
-            y_angular_velocity REAL NOT NULL,
-            z_angular_velocity REAL NOT NULL,
-            longitude REAL NOT NULL,
-            latitude REAL NOT NULL,
-            altitude REAL NOT NULL,
-            ground_speed REAL NOT NULL,
-            vertical_velocity REAL NOT NULL,
-            air_pressure REAL NOT NULL,
-            temperature REAL NOT NULL
-        )"
-    )
-    .execute(&pool)
-    .await
-    .map_err(|e| format!("failed to create telemetry table: {}", e))?;
-
-    Ok(pool)
+    app.run(|app_handle, event| {
+        if let tauri::RunEvent::ExitRequested { code, api, .. } = event {
+            if code.is_some() {
+                return;
+            }
+            let Some(serial_state) = app_handle.try_state::<SerialState>() else {
+                return;
+            };
+            let phase = serial_state
+                .test_session_status
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .phase
+                .clone();
+            if !matches!(
+                phase,
+                TestRunPhase::Starting
+                    | TestRunPhase::Recording
+                    | TestRunPhase::MonitoringUnrecorded
+                    | TestRunPhase::Finishing
+            ) {
+                return;
+            }
+            api.prevent_exit();
+            if serial_state.shutdown_started.swap(true, Ordering::SeqCst) {
+                return;
+            }
+            let handle = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                if let (Some(serial), Some(storage)) = (
+                    handle.try_state::<SerialState>(),
+                    handle.try_state::<StorageState>(),
+                ) {
+                    commands::serial::interrupt_test_monitoring(
+                        serial.inner(),
+                        storage.inner(),
+                        &handle,
+                        "application exit requested before the run was completed",
+                    )
+                    .await;
+                }
+                handle.exit(0);
+            });
+        }
+    });
 }

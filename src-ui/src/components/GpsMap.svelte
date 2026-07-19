@@ -34,7 +34,7 @@
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map);
-    trackLine = L.polyline([], { color: '#00d4ff', weight: 3 }).addTo(map);
+    trackLine = L.polyline([], { color: '#73d2b6', weight: 3 }).addTo(map);
 
     tileLayer.on('tileerror', handleTileError);
     tileLayer.on('load', handleTileLoad);
@@ -125,6 +125,7 @@
 <article class="gps-card">
   <div class="card-header">
     <div>
+      <span class="eyebrow">POSITION TRACKING</span>
       <span class="header-label">GPS 即時位置</span>
       <span class="status" class:valid={positionStatus === '定位有效'}>{positionStatus}</span>
     </div>
@@ -156,11 +157,10 @@
 
 <style>
   .gps-card {
-    padding: var(--sp-4);
+    overflow: hidden;
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
     box-shadow: var(--glass-shadow);
   }
 
@@ -170,15 +170,16 @@
     display: flex;
     align-items: center;
   }
-  .card-header { justify-content: space-between; gap: var(--sp-2); margin-bottom: var(--sp-3); }
-  .card-header > div { gap: var(--sp-2); }
-  .header-label { color: var(--text-primary); font-size: var(--fs-sm); font-weight: 600; }
+  .card-header { justify-content: space-between; gap: var(--sp-2); padding: var(--sp-4) var(--sp-5); }
+  .card-header > div { flex-wrap: wrap; gap: var(--sp-2); }
+  .eyebrow { width: 100%; color: var(--accent-cyan); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; }
+  .header-label { color: var(--text-primary); font-size: var(--fs-md); font-weight: 560; }
   .status { color: var(--accent-orange); font-size: var(--fs-xs); }
   .status.valid { color: var(--accent-green); }
   .track-count { color: var(--text-tertiary); font-size: var(--fs-xs); }
 
-  .map-wrap { position: relative; overflow: hidden; border-radius: var(--radius-md); }
-  .map { width: 100%; height: 280px; background: var(--surface); }
+  .map-wrap { position: relative; overflow: hidden; border-block: 1px solid var(--border-muted); }
+  .map { width: 100%; height: clamp(240px, 30vh, 330px); background: var(--surface); filter: saturate(.72) brightness(.82) contrast(1.08); }
   .map-error {
     position: absolute;
     right: var(--sp-2);
@@ -193,15 +194,15 @@
     text-align: center;
   }
 
-  .gps-readout { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-1); margin-top: var(--sp-3); color: var(--text-secondary); font-size: 10px; }
-  .map-actions { flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
+  .gps-readout { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-1); padding: var(--sp-3) var(--sp-5) 0; color: var(--text-secondary); font-size: 10px; }
+  .map-actions { flex-wrap: wrap; gap: var(--sp-2); padding: var(--sp-3) var(--sp-5) var(--sp-4); }
   .map-actions button {
     flex: 1;
     min-width: 78px;
     padding: var(--sp-2);
     border: 1px solid var(--surface-border);
     border-radius: var(--radius-sm);
-    background: var(--surface-light);
+    background: transparent;
     color: var(--text-secondary);
     font-size: 10px;
   }
@@ -217,7 +218,7 @@
     border: 2px solid #00141a;
     border-radius: 50%;
     background: var(--accent-cyan);
-    box-shadow: 0 0 14px var(--accent-cyan-glow);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
     color: #00141a;
     font-size: 16px;
     transform: rotate(0deg);

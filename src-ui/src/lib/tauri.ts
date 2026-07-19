@@ -9,23 +9,49 @@ import type {
   CommandStatus,
   FlightStats,
   FlightSessionMetadata,
+  StorageStatus,
+  TestSessionStatus,
 } from './types';
 import type { store as StoreType } from './stores.svelte';
 
-export async function startMonitoring(path: string, baudRate: number): Promise<void> {
-  await invoke('start_monitoring', { path, baudRate });
+export async function startTestMonitoring(
+  path: string,
+  baudRate: number,
+  metadata: FlightSessionMetadata,
+  allowUnrecorded: boolean,
+): Promise<TestSessionStatus> {
+  return await invoke<TestSessionStatus>('start_test_monitoring', {
+    path,
+    baudRate,
+    metadata,
+    allowUnrecorded,
+  });
 }
 
 export async function listSerialPorts(): Promise<string[]> {
   return await invoke<string[]>('list_serial_ports');
 }
 
-export async function stopMonitoring(): Promise<void> {
-  await invoke('stop_monitoring');
+export async function stopTestMonitoring(): Promise<TestSessionStatus> {
+  return await invoke<TestSessionStatus>('stop_test_monitoring');
 }
 
-export async function getTelemetryHistory(limit: number): Promise<DbTelemetry[]> {
-  return await invoke<DbTelemetry[]>('get_telemetry_history', { limit });
+export async function getTestSessionStatus(): Promise<TestSessionStatus> {
+  return await invoke<TestSessionStatus>('get_test_session_status');
+}
+
+export async function getStorageStatus(): Promise<StorageStatus> {
+  return await invoke<StorageStatus>('get_storage_status');
+}
+
+export async function getTelemetryHistory(
+  limit: number,
+  testRunId?: string,
+): Promise<DbTelemetry[]> {
+  return await invoke<DbTelemetry[]>('get_telemetry_history', {
+    limit,
+    testRunId: testRunId ?? null,
+  });
 }
 
 export async function setTimer(durationS: number): Promise<void> {
@@ -34,14 +60,6 @@ export async function setTimer(durationS: number): Promise<void> {
 
 export async function forceRelease(): Promise<void> {
   await invoke('force_release');
-}
-
-export async function startFlightSession(metadata: FlightSessionMetadata): Promise<string> {
-  return await invoke<string>('start_flight_session', { metadata });
-}
-
-export async function stopFlightSession(): Promise<string> {
-  return await invoke<string>('stop_flight_session');
 }
 
 export async function getFlightStats(): Promise<FlightStats> {
@@ -77,6 +95,16 @@ export async function setupEventListeners(
     appStore.updateFlightStats(event.payload);
   });
   unlisteners.push(unlistenFlightStats);
+
+  const unlistenTestSession = await listen<TestSessionStatus>('test-session-status', (event) => {
+    appStore.updateTestSessionStatus(event.payload);
+  });
+  unlisteners.push(unlistenTestSession);
+
+  const unlistenStorage = await listen<StorageStatus>('storage-status', (event) => {
+    appStore.updateStorageStatus(event.payload);
+  });
+  unlisteners.push(unlistenStorage);
 
   const unlistenError = await listen<SerialError>('serial-error', (event) => {
     appStore.addError(event.payload);

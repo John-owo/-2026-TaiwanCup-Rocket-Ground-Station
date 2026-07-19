@@ -36,7 +36,12 @@ test('monitoring UI uses Traditional Chinese labels', () => {
   }
 });
 
-test('app renders GPS map before attitude in the right sidebar', () => {
+test('app keeps telemetry and compact attitude in the center column', () => {
   const app = read('../App.svelte');
-  assert.match(app, /<aside class="sidebar-right">[\s\S]*<GpsMap \/>[\s\S]*<AttitudeIndicator \/>/u);
+  assert.match(app, /<main class="center-area">[\s\S]*<TelemetryGrid \/>[\s\S]*<TelemetryCharts \/>[\s\S]*<AttitudeIndicator \/>/u);
+});
+
+test('app keeps GPS above flight controls in the right sidebar', () => {
+  const app = read('../App.svelte');
+  assert.match(app, /<aside class="sidebar-right"[^>]*>[\s\S]*<GpsMap \/>[\s\S]*<FlightControlPanel \/>/u);
 });

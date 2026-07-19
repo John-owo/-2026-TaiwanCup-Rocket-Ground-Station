@@ -52,6 +52,7 @@ export interface FlightStats {
 }
 
 export interface FlightSessionMetadata {
+  purpose: string;
   initialBatteryVoltage: number;
   location: string;
   operator: string;
@@ -92,6 +93,7 @@ export interface SerialError {
 
 export interface DbTelemetry {
   id: number;
+  testRunId: string | null;
   receivedAt: string;
   xAcceleration: number;
   yAcceleration: number;
@@ -106,4 +108,41 @@ export interface DbTelemetry {
   verticalVelocity: number;
   airPressure: number;
   temperature: number;
+}
+
+export type TestRunPhase =
+  | 'disconnected'
+  | 'starting'
+  | 'recording'
+  | 'monitoring_unrecorded'
+  | 'finishing'
+  | 'completed'
+  | 'interrupted'
+  | 'failed';
+
+export interface TestSessionStatus {
+  phase: TestRunPhase;
+  testRunId: string | null;
+  directory: string | null;
+  purpose: string | null;
+  detail: string | null;
+}
+
+export type StoragePhase = 'initializing' | 'healthy' | 'degraded' | 'failed';
+
+export interface StorageStatus {
+  phase: StoragePhase;
+  dataPath: string;
+  availableBytes: number | null;
+  queueDepth: number;
+  queueCapacity: number;
+  lastWriteUnixMs: number | null;
+  lastError: string | null;
+  droppedWrites: number;
+}
+
+export interface TestStartRequest {
+  id: number;
+  path: string;
+  baudRate: number;
 }

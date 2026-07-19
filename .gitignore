@@ -10,3 +10,7 @@ src-tauri/target
 # Node.js
 src-ui/dist
 src-ui/node_modules
+
+# Local release outputs
+artifacts/*.exe
+artifacts/*.json

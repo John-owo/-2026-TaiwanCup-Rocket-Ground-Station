@@ -4,28 +4,28 @@ import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
-test('flight controls expose timer, one-click unlocked force release, and airborne state', () => {
+test('flight controls expose timer, guarded force release, and airborne state', () => {
   const source = read('../components/FlightControlPanel.svelte');
   assert.match(source, /await setTimer\(timerSeconds\)/u);
-  assert.match(source, /if \(!safetyUnlocked\) return;/u);
+  assert.match(source, /if \(!controlsEnabled \|\| !safetyUnlocked\) return;/u);
   assert.match(source, /await forceRelease\(\)/u);
   assert.match(source, /safetyUnlocked = false/u);
   assert.match(source, /空中端剩餘/u);
   assert.match(source, /最後封包/u);
   assert.match(source, /DEPLOYED/u);
   assert.match(source, /空中端已 DEPLOYED/u);
-  assert.match(source, /!store\.connected \|\| telemetry\.deployState === 1/u);
+  assert.match(source, /!controlsEnabled \|\| telemetry\.deployState === 1/u);
   assert.doesNotMatch(source, /long.?press|長按/iu);
 });
 
-test('flight session UI collects required metadata and displays separate statistics', () => {
+test('flight session UI displays backend-owned run status and separate statistics', () => {
   const source = read('../components/FlightControlPanel.svelte');
   for (const token of [
-    'initialBatteryVoltage',
-    'location',
-    'operator',
-    'notes',
-    'flightSessionDirectory',
+    'testSessionStatus',
+    'testRunId',
+    'purpose',
+    'directory',
+    '記錄中',
     'lostPackets',
     'duplicatePackets',
     'crcErrors',
@@ -35,6 +35,7 @@ test('flight session UI collects required metadata and displays separate statist
   ]) {
     assert.equal(source.includes(token), true, token);
   }
+  assert.doesNotMatch(source, /sessionActive|開始新場次|startFlightSession/u);
 });
 
 test('frontend bridge listens for command and flight-stat events', () => {
@@ -43,6 +44,8 @@ test('frontend bridge listens for command and flight-stat events', () => {
   assert.match(source, /invoke\('force_release'\)/u);
   assert.match(source, /listen<CommandStatus>\('command-status'/u);
   assert.match(source, /listen<FlightStats>\('flight-stats'/u);
+  assert.match(source, /listen<TestSessionStatus>\('test-session-status'/u);
+  assert.match(source, /listen<StorageStatus>\('storage-status'/u);
 });
 
 test('store timestamps every telemetry packet and preserves command status', () => {
