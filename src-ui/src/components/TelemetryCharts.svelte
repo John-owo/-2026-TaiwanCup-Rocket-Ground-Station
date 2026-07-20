@@ -216,4 +216,12 @@
     .flight-summary { padding: var(--sp-4); }
     .flight-summary dl { grid-template-columns: repeat(2, 1fr); }
   }
+
+  @media (max-height: 900px) and (min-width: 1241px) {
+    .chart-section,
+    .flight-summary { padding: var(--sp-4); }
+    .chart-frame { min-height: 168px; margin-top: var(--sp-2); }
+    .chart-svg { height: 176px; }
+    .flight-summary dl { margin-top: var(--sp-2); }
+  }
 </style>

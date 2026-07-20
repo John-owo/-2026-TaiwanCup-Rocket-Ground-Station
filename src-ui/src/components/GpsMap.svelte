@@ -223,4 +223,11 @@
     font-size: 16px;
     transform: rotate(0deg);
   }
+
+  @media (max-height: 900px) and (min-width: 1241px) {
+    .card-header { padding: var(--sp-3) var(--sp-4); }
+    .map { height: clamp(150px, 18vh, 190px); }
+    .gps-readout { padding: var(--sp-2) var(--sp-4) 0; }
+    .map-actions { padding: var(--sp-2) var(--sp-4) var(--sp-3); }
+  }
 </style>

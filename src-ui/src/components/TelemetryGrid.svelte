@@ -206,4 +206,13 @@
     .metric-strip { grid-template-columns: 1fr 1fr; }
     .telemetry-grid { grid-template-columns: 1fr; }
   }
+
+  @media (max-height: 900px) and (min-width: 1241px) {
+    .primary-telemetry { padding: 16px 20px; }
+    .hero-reading { padding: 16px 0 18px; }
+    .reading-value strong { font-size: clamp(64px, 9vh, 78px); }
+    .vertical-trend { margin-top: 10px; }
+    .metric-strip > div { padding: 10px 12px; }
+    .sensor-details { margin-top: 10px; }
+  }
 </style>

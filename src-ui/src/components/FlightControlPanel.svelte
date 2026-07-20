@@ -233,4 +233,11 @@
   .stats-grid { grid-template-columns: 1fr 1fr; color: var(--text-secondary); }
   .stats-grid strong { color: var(--text-primary); }
   .error-message { color: var(--accent-red); font-size: var(--fs-xs); }
+
+  @media (max-height: 900px) and (min-width: 1241px) {
+    .flight-control-panel { gap: var(--sp-2); padding: var(--sp-4); }
+    .test-run-state,
+    .command-status,
+    .stats-grid { padding: var(--sp-2) var(--sp-3); }
+  }
 </style>

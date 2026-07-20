@@ -84,7 +84,9 @@
 
   <div class="main-content">
     <aside class="sidebar-left" aria-label="連線與測試設定">
-      <ConnectionPanel />
+      <div class="sticky-panel">
+        <ConnectionPanel />
+      </div>
     </aside>
 
     <main class="center-area">
@@ -209,10 +211,13 @@
   .main-content {
     display: grid;
     grid-template-columns: 244px minmax(500px, 1fr) minmax(330px, 380px);
+    align-items: start;
     gap: 16px;
     min-height: 0;
     padding: 16px 18px;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
   }
 
   .sidebar-left,
@@ -220,30 +225,39 @@
   .center-area {
     min-width: 0;
     min-height: 0;
-    overflow-y: auto;
-    scrollbar-gutter: stable;
+    align-self: start;
   }
 
   .sidebar-left {
-    position: relative;
+    align-self: stretch;
     z-index: 2;
+  }
+
+  .sticky-panel {
+    position: sticky;
+    top: 0;
   }
 
   .sidebar-right,
   .center-area {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-auto-rows: max-content;
+    align-content: start;
     gap: 16px;
   }
 
   @media (max-width: 1240px) {
     .top-bar { grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); }
     .system-state { grid-column: 1 / -1; justify-content: flex-start; padding-bottom: 12px; }
-    .main-content { grid-template-columns: 230px minmax(0, 1fr); overflow-y: auto; }
-    .sidebar-left,
-    .sidebar-right,
-    .center-area { overflow: visible; }
+    .main-content { grid-template-columns: 230px minmax(0, 1fr); }
     .sidebar-right { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(330px, .8fr); }
+  }
+
+  @media (max-height: 900px) and (min-width: 1241px) {
+    .top-bar { min-height: 70px; }
+    .main-content { gap: 12px; padding: 12px 14px; }
+    .sidebar-right,
+    .center-area { gap: 12px; }
   }
 
   @media (max-width: 780px) {
@@ -255,6 +269,7 @@
     .data-chip,
     .run-chip { display: none; }
     .main-content { grid-template-columns: 1fr; padding: 12px; overflow: visible; }
+    .sticky-panel { position: static; }
     .sidebar-right { grid-column: auto; grid-template-columns: 1fr; }
   }
 </style>

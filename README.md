@@ -372,7 +372,7 @@ cargo check --locked
 
 2026-07-16 已驗證的 no-bundle 產物位於 `src-tauri/target/release/app.exe`。若需要 installer／bundle，另行執行正式 bundle build 並保存該次驗證結果，不要把 no-bundle 結果當成 installer 已驗證。
 
-正式發行前需保存上述測試、型別檢查、前端 production build 與 Tauri release build 的通過結果。通過後，可將 `src-tauri/target/release/app.exe` 以 `artifacts/GroundStation_<version>_Portable_<YYYY-MM-DD_HHMMSS>.exe` 暫存在本機，建立同名 `.json` 驗證清單／SHA-256 並更新 `artifacts/LATEST.txt`。`artifacts/*.exe` 一律不提交 Git；正式版本須把 `.exe` 與驗證清單上傳到 GitHub Releases。版本庫只保留 JSON/checksum、`LATEST.txt` 與 release URL metadata，未通過驗證的本機產物不得標記或發布為最新版。既有 Git 歷史不在一般修正版中重寫。
+每次完成應用程式或 UI 更新，都必須保存上述測試、型別檢查、前端 production build、Rust 驗證與 Tauri release build 的通過結果。通過後，將 `src-tauri/target/release/app.exe` 以 `artifacts/GroundStation_<version>_Portable_<YYYY-MM-DD_HHMMSS>.exe` 暫存在本機，建立同名 `.json` 驗證清單／SHA-256 並更新 `artifacts/LATEST.txt`。`artifacts/*.exe` 一律不提交 Git；原始碼與 metadata commit／push 後，必須把 `.exe`、manifest 與 checksum 上傳到新的版本化 GitHub Releases 發行頁，並重新下載核對大小與 SHA-256，完成前不得標記工作項目為完成。既有 Git 歷史不在一般修正版中重寫。
 
 ---
 
