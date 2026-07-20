@@ -1,7 +1,7 @@
-version=0.1.1
-executable=GroundStation_0.1.1_Portable_2026-07-20_212914.exe
-manifest=GroundStation_0.1.1_Portable_2026-07-20_212914.json
-checksum=GroundStation_0.1.1_Portable_2026-07-20_212914.sha256
-source_commit=e44bcd1a40bad7539fe326118d5586b14b010f25
-release_tag=v0.1.1
-release_page=https://github.com/John-owo/-2026-TaiwanCup-Rocket-Ground-Station/releases/tag/v0.1.1
+version=0.1.2
+executable=GroundStation_0.1.2_Portable_2026-07-20_224303.exe
+manifest=GroundStation_0.1.2_Portable_2026-07-20_224303.json
+checksum=GroundStation_0.1.2_Portable_2026-07-20_224303.sha256
+source_commit=efae205d2421a1a7b2e82bd20f7b26ae9b7b074d
+release_tag=v0.1.2
+release_page=https://github.com/John-owo/-2026-TaiwanCup-Rocket-Ground-Station/releases/tag/v0.1.2

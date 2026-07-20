@@ -34,7 +34,7 @@
 - 收到新 session 時，舊 ACK 不會改變狀態；最新 timer 會以新 command ID 重建，`FORCE_RELEASE` 不跨 session 自動重放。收到 telemetry last-ACK 也能在獨立 ACK 遺失時停止重送。
 - 正式空中 telemetry 週期為 1800 ms，地面站失聯門檻為 4500 ms。實測 1800 ms 三輪共 60/60 timer 首次 ACK，telemetry 遺失／重複／CRC 都是 0；ESP32 #2 USB 必須拔除並使用外部電源才能進行 RF 台架測試。
 
-最新已驗證 portable metadata 為 [`GroundStation_0.1.1_Portable_2026-07-20_212914.json`](artifacts/GroundStation_0.1.1_Portable_2026-07-20_212914.json)，SHA-256 `05BEA82B63C509353F21CD023A563534686141D848489973A12AA0959AB59990`，另附可由工具直接核對的 [`.sha256` checksum](artifacts/GroundStation_0.1.1_Portable_2026-07-20_212914.sha256)。可執行檔不再提交到一般 Git 歷史，正式二進位由 [GitHub Release v0.1.1](https://github.com/John-owo/-2026-TaiwanCup-Rocket-Ground-Station/releases/tag/v0.1.1) 發布。Protocol v1/v2 共用測試向量位於工作區根目錄 `protocol/`。
+最新已驗證 portable metadata 為 [`GroundStation_0.1.2_Portable_2026-07-20_224303.json`](artifacts/GroundStation_0.1.2_Portable_2026-07-20_224303.json)，SHA-256 `9845EB21C9508EF6CA5F62481BA5494EDE531678809E41D4F1B2EBDE7F8E6741`，另附可由工具直接核對的 [`.sha256` checksum](artifacts/GroundStation_0.1.2_Portable_2026-07-20_224303.sha256)。可執行檔不再提交到一般 Git 歷史，正式二進位由 [GitHub Release v0.1.2](https://github.com/John-owo/-2026-TaiwanCup-Rocket-Ground-Station/releases/tag/v0.1.2) 發布。Protocol v1/v2 共用測試向量位於工作區根目錄 `protocol/`。
 
 ---
 
