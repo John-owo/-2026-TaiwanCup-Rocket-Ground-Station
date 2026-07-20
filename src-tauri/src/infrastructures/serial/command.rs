@@ -68,7 +68,6 @@ pub struct CommandManager {
     latest_timer_s: Option<u32>,
     pending_timer: Option<PendingCommand>,
     pending_force: Option<PendingCommand>,
-    force_requested_without_session: bool,
     next_command_id: u32,
     next_frame_seq: u32,
 }
@@ -89,15 +88,9 @@ impl CommandManager {
             }
             CommandRequest::ForceRelease => {
                 if self.current_session_id.is_none() {
-                    self.force_requested_without_session = true;
-                    return Ok(CommandStatusEvent {
-                        command_id: None,
-                        command_type: "FORCE_RELEASE".to_string(),
-                        status: "waiting_session".to_string(),
-                        attempts: 0,
-                        result: None,
-                        detail: "waiting for an airborne session".to_string(),
-                    });
+                    return Err(
+                        "FORCE_RELEASE requires a live airborne telemetry session".to_string(),
+                    );
                 }
                 self.pending_force = Some(self.new_pending(CommandKind::ForceRelease, Vec::new())?);
                 Ok(status_for(self.pending_force.as_ref(), "queued", None, "highest priority"))
@@ -125,24 +118,6 @@ impl CommandManager {
                 });
             }
 
-            if self.force_requested_without_session && previous.is_none() {
-                self.force_requested_without_session = false;
-                match self.new_pending(CommandKind::ForceRelease, Vec::new()) {
-                    Ok(command) => {
-                        self.pending_force = Some(command);
-                        events.push(status_for(
-                            self.pending_force.as_ref(),
-                            "queued",
-                            None,
-                            "session discovered; force release queued",
-                        ));
-                    }
-                    Err(error) => events.push(error_status("FORCE_RELEASE", error)),
-                }
-            } else {
-                self.force_requested_without_session = false;
-            }
-
             self.pending_timer = None;
             if let Some(duration_s) = self.latest_timer_s {
                 match self.new_pending(CommandKind::SetTimer, duration_s.to_be_bytes().to_vec()) {
@@ -168,6 +143,18 @@ impl CommandManager {
         }
         self.finish_commands_invalidated_by_deployment(telemetry, &mut events);
         events
+    }
+
+    pub fn cancel_pending_force(&mut self, detail: &str) -> Option<CommandStatusEvent> {
+        let pending = self.pending_force.take()?;
+        Some(CommandStatusEvent {
+            command_id: Some(pending.command_id),
+            command_type: pending.kind.label().to_string(),
+            status: "cancelled".to_string(),
+            attempts: pending.attempts,
+            result: None,
+            detail: detail.to_string(),
+        })
     }
 
     fn finish_commands_invalidated_by_deployment(
@@ -610,6 +597,32 @@ mod tests {
         assert!(manager.pending_force.is_none());
         assert_eq!(manager.pending_timer.as_ref().unwrap().payload, 33_u32.to_be_bytes());
         assert!(events.iter().any(|event| event.detail.contains("latest timer requeued")));
+    }
+
+    #[test]
+    fn force_without_session_is_rejected_and_never_deferred() {
+        let mut manager = CommandManager::default();
+
+        assert!(manager.request(CommandRequest::ForceRelease).is_err());
+        manager.observe_telemetry(&telemetry(1, 0));
+
+        assert!(manager.next_transmission().unwrap().is_none());
+    }
+
+    #[test]
+    fn link_loss_cancels_force_without_replaying_it_on_recovery() {
+        let mut manager = CommandManager::default();
+        manager.observe_telemetry(&telemetry(1, 0));
+        manager.request(CommandRequest::ForceRelease).unwrap();
+
+        let cancelled = manager
+            .cancel_pending_force("telemetry link lost")
+            .expect("pending FORCE must be cancelled");
+        assert_eq!(cancelled.status, "cancelled");
+        assert!(manager.next_transmission().unwrap().is_none());
+
+        manager.observe_telemetry(&telemetry(1, 0));
+        assert!(manager.next_transmission().unwrap().is_none());
     }
 
     #[test]

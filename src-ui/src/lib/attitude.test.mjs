@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   createAttitudeEstimator,
@@ -61,6 +62,16 @@ test('integrates normal low-frequency telemetry at 500 ms and 1000 ms', () => {
   assert.notDeepEqual(after1000Ms, after500Ms);
 });
 
+test('integrates the formal 1800 ms telemetry interval', () => {
+  const estimator = createAttitudeEstimator();
+  const rotating = sample({ x: 0, y: 0, z: 10 });
+
+  estimator.update(rotating, 1_000, identity);
+  const afterFormalInterval = estimator.update(rotating, 2_800, identity);
+
+  assert.equal(afterFormalInterval.yaw, 18);
+});
+
 test('uses gravity correction near 1g but rejects powered-flight acceleration', () => {
   const estimator = createAttitudeEstimator({
     initialAttitude: { roll: 30, pitch: 20, yaw: 0 },
@@ -93,12 +104,52 @@ test('rebuilds the time baseline after a multi-second telemetry interruption', (
 
   estimator.update(rotating, 1000, identity);
   const beforeGap = estimator.update(rotating, 1500, identity);
-  const afterGap = estimator.update(rotating, 6000, identity);
-  const afterResume = estimator.update(rotating, 6500, identity);
+  const afterGap = estimator.update(rotating, 6001, identity);
+  const afterResume = estimator.update(rotating, 6501, identity);
 
   assert.equal(beforeGap.yaw, 50);
   assert.deepEqual(afterGap, beforeGap);
   assert.equal(afterResume.yaw, 100);
+});
+
+test('rebuilds the time baseline after the 4500 ms link-loss threshold', () => {
+  const estimator = createAttitudeEstimator();
+  const rotating = sample({ x: 0, y: 0, z: 10 });
+
+  estimator.update(rotating, 1_000, identity);
+  const beforeGap = estimator.update(rotating, 2_800, identity);
+  const afterGap = estimator.update(rotating, 7_301, identity);
+  const afterResume = estimator.update(rotating, 9_101, identity);
+
+  assert.equal(beforeGap.yaw, 18);
+  assert.deepEqual(afterGap, beforeGap);
+  assert.equal(afterResume.yaw, 36);
+});
+
+test('rebuilds the time baseline when airborne uptime moves backwards', () => {
+  const estimator = createAttitudeEstimator();
+  const rotating = sample({ x: 0, y: 0, z: 10 });
+
+  estimator.update(rotating, 10_000, identity);
+  const beforeRestart = estimator.update(rotating, 11_800, identity);
+  const afterRestart = estimator.update(rotating, 200, identity);
+  const afterResume = estimator.update(rotating, 2_000, identity);
+
+  assert.equal(beforeRestart.yaw, 18);
+  assert.deepEqual(afterRestart, beforeRestart);
+  assert.equal(afterResume.yaw, 36);
+});
+
+test('attitude component uses airborne uptime and explains relative yaw', () => {
+  const source = readFileSync(
+    new URL('../components/AttitudeIndicator.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /snapshot\.telemetry\.uptimeMs/u);
+  assert.doesNotMatch(source, /performance\.now\(\)/u);
+  assert.match(source, /估算姿態/u);
+  assert.match(source, /YAW 為相對角度，非絕對航向/u);
 });
 
 test('ignores non-finite gyro updates', () => {

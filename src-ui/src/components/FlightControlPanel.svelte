@@ -1,11 +1,14 @@
 <script lang="ts">
   import { store } from '@/lib/stores.svelte';
   import { forceRelease, setTimer } from '@/lib/tauri';
+  import { getTelemetryLinkState } from '@/lib/telemetry-link.js';
 
   let timerSeconds = $state(30);
   let safetyUnlocked = $state(false);
   let busy = $state(false);
   let errorMessage = $state('');
+  let nowMs = $state(Date.now());
+  let observedSessionId = $state<number | null>(null);
 
   let telemetry = $derived(store.telemetry);
   let commandStatus = $derived(store.commandStatus);
@@ -13,6 +16,12 @@
   let session = $derived(store.testSessionStatus);
   let controlsEnabled = $derived(
     session.phase === 'recording' || session.phase === 'monitoring_unrecorded',
+  );
+  let airborneLinkState = $derived(
+    getTelemetryLinkState(controlsEnabled, store.lastPacketAt, nowMs),
+  );
+  let forceAvailable = $derived(
+    controlsEnabled && airborneLinkState === 'live' && telemetry.deployState !== 1,
   );
   let lastPacket = $derived(
     store.lastPacketAt === null
@@ -30,6 +39,26 @@
     interrupted: '未正常完成',
     failed: '啟動失敗',
   } as const;
+
+  $effect(() => {
+    if (!controlsEnabled) {
+      nowMs = Date.now();
+      return;
+    }
+    const interval = setInterval(() => {
+      nowMs = Date.now();
+    }, 250);
+    return () => clearInterval(interval);
+  });
+
+  $effect(() => {
+    const sessionId = telemetry.sessionId;
+    const sessionChanged = observedSessionId !== null && sessionId !== observedSessionId;
+    if (airborneLinkState !== 'live' || sessionChanged) {
+      safetyUnlocked = false;
+    }
+    observedSessionId = sessionId || null;
+  });
 
   function errorText(error: unknown): string {
     if (typeof error === 'object' && error !== null) {
@@ -61,7 +90,7 @@
   }
 
   async function releaseNow() {
-    if (!controlsEnabled || !safetyUnlocked) return;
+    if (!forceAvailable || !safetyUnlocked) return;
     busy = true;
     errorMessage = '';
     try {
@@ -95,6 +124,7 @@
     <span>空中 Session <strong class="mono">{telemetry.sessionId ? `0x${telemetry.sessionId.toString(16).toUpperCase().padStart(8, '0')}` : '--'}</strong></span>
     <span>空中端剩餘 <strong class="mono">{telemetry.remainingS} s</strong></span>
     <span>最後封包 <strong class="mono">{lastPacket}</strong></span>
+    <span>強制釋放 <strong>{airborneLinkState === 'live' ? '可解鎖' : '需即時空中遙測'}</strong></span>
   </div>
 
   <div class="timer-row">
@@ -110,14 +140,14 @@
       class:unlocked={safetyUnlocked}
       class="safety-button"
       onclick={() => { safetyUnlocked = !safetyUnlocked; }}
-      disabled={busy || !controlsEnabled || telemetry.deployState === 1}
+      disabled={busy || !forceAvailable}
     >
       {safetyUnlocked ? '安全鎖已解除' : '解除安全鎖'}
     </button>
     <button
       class="release-button"
       onclick={releaseNow}
-      disabled={busy || !controlsEnabled || !safetyUnlocked || telemetry.deployState === 1}
+      disabled={busy || !forceAvailable || !safetyUnlocked}
     >
       FORCE RELEASE
     </button>

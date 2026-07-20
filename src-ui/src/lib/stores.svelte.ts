@@ -192,9 +192,16 @@ function createStore() {
     updateTestSessionStatus(status: TestSessionStatus) {
       testSessionStatus = { ...status };
       flightSessionDirectory = status.directory ?? flightSessionDirectory;
-      connected = status.phase === 'recording'
+      const nextConnected = status.phase === 'recording'
         || status.phase === 'monitoring_unrecorded'
         || status.phase === 'finishing';
+      if (nextConnected && !connected) {
+        stats = { totalPackets: 0, failedPackets: 0, packetsPerSecond: 0 };
+        lastPacketAt = null;
+        commandStatus = null;
+        airborneSessionChange = null;
+      }
+      connected = nextConnected;
       if (connected) testStartRequest = null;
     },
 
