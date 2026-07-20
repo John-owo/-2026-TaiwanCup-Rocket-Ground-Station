@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.1.2"
+version = "0.1.3"
 description = "五限可能 2026 TaiwanCup Rocket 地面站監控程式"
 authors = ["TaiwanCup Team"]
 license = ""

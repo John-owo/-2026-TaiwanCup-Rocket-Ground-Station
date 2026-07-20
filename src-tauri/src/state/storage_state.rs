@@ -1002,4 +1002,102 @@ mod tests {
         pool.close().await;
         std::fs::remove_dir_all(root).expect("remove temporary migration directory");
     }
+
+    #[tokio::test]
+    async fn migration_accepts_released_v0_1_1_checksum() {
+        const RELEASED_CHECKSUM: &[u8] = &[
+            0x01, 0xC4, 0xAA, 0x5F, 0xA0, 0x6F, 0xE6, 0x55, 0xD2, 0xC6, 0x83, 0xBE,
+            0xE6, 0x27, 0x1F, 0x2C, 0x95, 0x08, 0x98, 0xFF, 0xB9, 0x55, 0xD1, 0x55,
+            0x3F, 0x98, 0xAE, 0x95, 0xD0, 0x01, 0x77, 0x8E, 0xB4, 0x6C, 0xC8, 0x51,
+            0x83, 0x2E, 0x42, 0x1F, 0x7F, 0xD1, 0x8D, 0x5E, 0x87, 0x31, 0x61, 0x91,
+        ];
+        let root = std::env::temp_dir().join(format!(
+            "ground-station-released-migration-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&root).expect("temporary migration directory");
+        let options = SqliteConnectOptions::new()
+            .filename(root.join("telemetry.db"))
+            .create_if_missing(true);
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(options)
+            .await
+            .expect("released database");
+
+        sqlx::migrate!("./migrations")
+            .run(&pool)
+            .await
+            .expect("create current schema");
+        sqlx::query("UPDATE _sqlx_migrations SET checksum = ?1 WHERE version = 1")
+            .bind(RELEASED_CHECKSUM)
+            .execute(&pool)
+            .await
+            .expect("record released migration checksum");
+
+        migrate_database(&pool)
+            .await
+            .expect("released database remains compatible");
+        let migration_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM _sqlx_migrations")
+            .fetch_one(&pool)
+            .await
+            .expect("migration count");
+        assert_eq!(migration_count, 1);
+
+        pool.close().await;
+        std::fs::remove_dir_all(root).expect("remove temporary migration directory");
+    }
+
+    #[tokio::test]
+    #[ignore = "requires GS_MIGRATION_FIXTURE_DB pointing to a SQLite backup"]
+    async fn migration_preserves_external_database_fixture() {
+        let source = std::path::PathBuf::from(
+            std::env::var("GS_MIGRATION_FIXTURE_DB")
+                .expect("GS_MIGRATION_FIXTURE_DB must point to a SQLite backup"),
+        );
+        let root = std::env::temp_dir().join(format!(
+            "ground-station-external-migration-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&root).expect("temporary migration directory");
+        let db_path = root.join("telemetry.db");
+        std::fs::copy(&source, &db_path).expect("copy migration fixture");
+
+        let options = SqliteConnectOptions::new().filename(&db_path);
+        let before_pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(options)
+            .await
+            .expect("open migration fixture");
+        let telemetry_before: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM telemetry")
+            .fetch_one(&before_pool)
+            .await
+            .expect("telemetry count before migration");
+        let runs_before: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM test_runs")
+            .fetch_one(&before_pool)
+            .await
+            .expect("test run count before migration");
+        before_pool.close().await;
+
+        let pool = initialize_database(&root)
+            .await
+            .expect("external database fixture remains compatible");
+        let telemetry_after: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM telemetry")
+            .fetch_one(&pool)
+            .await
+            .expect("telemetry count after migration");
+        let runs_after: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM test_runs")
+            .fetch_one(&pool)
+            .await
+            .expect("test run count after migration");
+        assert_eq!(telemetry_after, telemetry_before);
+        assert_eq!(runs_after, runs_before);
+        println!(
+            "preserved {telemetry_after} telemetry rows and {runs_after} test runs"
+        );
+
+        pool.close().await;
+        drop(pool);
+        let _ = std::fs::remove_dir_all(root);
+    }
 }
