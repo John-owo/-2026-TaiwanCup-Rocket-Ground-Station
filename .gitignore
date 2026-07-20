@@ -1,6 +1,5 @@
 # General
 *.vscode*
-*lock*
 *fuse*
 .worktrees/
 
@@ -13,4 +12,3 @@ src-ui/node_modules
 
 # Local release outputs
 artifacts/*.exe
-artifacts/*.json

@@ -34,7 +34,7 @@ export interface AirborneSessionChange {
 export interface CommandStatus {
   commandId: number | null;
   commandType: string;
-  status: 'waiting_session' | 'queued' | 'sending' | 'acked' | 'failed' | 'ignored_ack' | 'cancelled';
+  status: 'queued' | 'sending' | 'acked' | 'failed' | 'ignored_ack' | 'cancelled';
   attempts: number;
   result: number | null;
   detail: string;

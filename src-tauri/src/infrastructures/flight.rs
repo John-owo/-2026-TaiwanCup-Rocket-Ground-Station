@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // Formal 1800 ms v2 telemetry period × 2.5, rounded up to 100 ms.
-const LINK_LOSS_THRESHOLD_MS: u64 = 4_500;
+pub const LINK_LOSS_THRESHOLD_MS: u64 = 4_500;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

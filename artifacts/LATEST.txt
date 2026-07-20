@@ -1,3 +1,4 @@
 ﻿version=0.1.0
 executable=GroundStation_0.1.0_Portable_2026-07-20_023341.exe
 manifest=GroundStation_0.1.0_Portable_2026-07-20_023341.json
+release_page=https://github.com/John-owo/-2026-TaiwanCup-Rocket-Ground-Station/releases

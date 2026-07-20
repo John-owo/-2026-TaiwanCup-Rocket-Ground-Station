@@ -9,6 +9,7 @@
   let roll = $state(0);
   let yaw = $state(0);
   let appliedAxisRevision = -1;
+  let appliedSessionId: number | null = null;
 
   $effect(() => {
     const axisRevision = store.axisMappingRevision;
@@ -33,6 +34,13 @@
       y: snapshot.telemetry.yAngularVelocity,
       z: snapshot.telemetry.zAngularVelocity,
     };
+    if (appliedSessionId !== snapshot.telemetry.sessionId) {
+      appliedSessionId = snapshot.telemetry.sessionId;
+      const reset = estimator.reset();
+      roll = reset.roll;
+      pitch = reset.pitch;
+      yaw = reset.yaw;
+    }
     gyroRates = mapSensorVector(rawGyro, snapshot.mapping);
     const next = estimator.update(
       {
@@ -43,7 +51,7 @@
           z: snapshot.telemetry.zAcceleration,
         },
       },
-      performance.now(),
+      snapshot.telemetry.uptimeMs,
       snapshot.mapping,
     );
     roll = next.roll;
@@ -68,7 +76,8 @@
   <header>
     <div>
       <span class="eyebrow">ATTITUDE ESTIMATE</span>
-      <h2>火箭姿態</h2>
+      <h2>估算姿態</h2>
+      <p class="estimate-note">MPU6050 無磁力計；YAW 為相對角度，非絕對航向</p>
     </div>
     <button class="zero-btn" onclick={zeroAttitude}>姿態歸零</button>
   </header>
@@ -120,6 +129,7 @@
   header { align-self: stretch; padding: var(--sp-5); border-right: 1px solid var(--border-muted); }
   .eyebrow { color: var(--accent-cyan); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; }
   h2 { margin-top: 5px; font-size: var(--fs-lg); font-weight: 560; }
+  .estimate-note { margin-top: 4px; color: var(--text-tertiary); font-size: 9px; line-height: 1.35; }
   .zero-btn {
     margin-top: var(--sp-5);
     padding: 7px 10px;

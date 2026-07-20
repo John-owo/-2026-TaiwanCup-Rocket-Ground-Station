@@ -8,7 +8,7 @@ use crate::services::serial::Receiver;
 use crate::state::{RunOutcome, SerialState, StorageState};
 
 use std::sync::atomic::Ordering;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio_util::sync::CancellationToken;
 
@@ -42,6 +42,11 @@ fn release_monitoring(serial_state: &SerialState, cancellation_token: &Cancellat
             .command_tx
             .lock()
             .unwrap_or_else(|error| error.into_inner()) = None;
+        serial_state
+            .airborne_link
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clear();
     }
 }
 
@@ -111,6 +116,11 @@ pub async fn start_test_monitoring(
         storage_readiness.map_err(InvokeError::DatabaseError)?;
     }
     let cancellation_token = reserve_monitoring(&serial_state)?;
+    serial_state
+        .airborne_link
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .clear();
     serial_state
         .manual_stop_requested
         .store(false, Ordering::SeqCst);
@@ -323,11 +333,24 @@ pub async fn force_release(
     storage_state: State<'_, StorageState>,
     app_handle: AppHandle,
 ) -> InvokeResult<String> {
+    let live_session_id = serial_state
+        .airborne_link
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .live_session_id(Instant::now())
+        .ok_or_else(|| {
+            InvokeError::SerialError(
+                "FORCE_RELEASE requires telemetry from a live airborne session within 4500 ms"
+                    .to_string(),
+            )
+        })?;
     queue_command(&serial_state, CommandRequest::ForceRelease)?;
     let _ = storage_state.enqueue_event(
         &app_handle,
         "WARN",
-        "FORCE_RELEASE requested after UI safety unlock",
+        format!(
+            "FORCE_RELEASE requested after UI safety unlock for live session 0x{live_session_id:08X}"
+        ),
     );
     Ok("FORCE_RELEASE queued".to_string())
 }

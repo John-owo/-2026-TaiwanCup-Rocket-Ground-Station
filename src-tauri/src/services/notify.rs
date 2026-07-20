@@ -39,11 +39,16 @@ impl NotificationCenter<'_> {
     }
 
     /// 推送封包統計資訊到前端
-    pub fn update_stats(&self, total_packets: u64, failed_packets: u32) {
+    pub fn update_stats(
+        &self,
+        total_packets: u64,
+        failed_packets: u32,
+        packets_per_second: f64,
+    ) {
         let _ = self.app_handle.emit("packet-stats", serde_json::json!({
             "totalPackets": total_packets,
             "failedPackets": failed_packets,
-            "packetsPerSecond": 0.0
+            "packetsPerSecond": packets_per_second
         }));
     }
 }

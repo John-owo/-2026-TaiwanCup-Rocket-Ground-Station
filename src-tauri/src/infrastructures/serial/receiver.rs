@@ -3,11 +3,13 @@ use crate::infrastructures::serial::command::{
     FRAME_TYPE_SET_TIMER,
 };
 use crate::infrastructures::serial::parser::{PacketParser, ParseResult};
+use crate::infrastructures::flight::LINK_LOSS_THRESHOLD_MS;
 use crate::models::response::{
     AirborneSessionChanged, CommandStatusEvent, ParsedFrame, TelemetryPayload,
 };
 use crate::services::serial::{Parser, Receiver};
 
+use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
@@ -20,7 +22,48 @@ use tokio_util::sync::CancellationToken;
 const COMMAND_WINDOW_START_MS: u64 = 150;
 const COMMAND_WINDOW_END_MS: u64 = 300;
 const SERIAL_RX_IDLE_GUARD_MS: u64 = 30;
-const TELEMETRY_RECOVERY_GAP_MS: u64 = 4_500;
+const PACKET_RATE_WINDOW_MS: u64 = 10_000;
+const STATS_EMIT_INTERVAL_MS: u64 = 500;
+
+#[derive(Default)]
+struct PacketRateTracker {
+    telemetry_timestamps_ms: VecDeque<u64>,
+}
+
+impl PacketRateTracker {
+    fn observe(&mut self, now_ms: u64) {
+        self.telemetry_timestamps_ms.push_back(now_ms);
+        self.prune(now_ms);
+    }
+
+    fn packets_per_second(&mut self, now_ms: u64) -> f64 {
+        self.prune(now_ms);
+        if self.telemetry_timestamps_ms.len() < 2 {
+            return 0.0;
+        }
+        let oldest = *self
+            .telemetry_timestamps_ms
+            .front()
+            .expect("at least two telemetry timestamps");
+        let span_ms = now_ms.saturating_sub(oldest);
+        if span_ms == 0 {
+            return 0.0;
+        }
+        let intervals = self.telemetry_timestamps_ms.len().saturating_sub(1) as f64;
+        intervals * 1_000.0 / span_ms as f64
+    }
+
+    fn prune(&mut self, now_ms: u64) {
+        let cutoff_ms = now_ms.saturating_sub(PACKET_RATE_WINDOW_MS);
+        while self
+            .telemetry_timestamps_ms
+            .front()
+            .is_some_and(|timestamp| *timestamp < cutoff_ms)
+        {
+            self.telemetry_timestamps_ms.pop_front();
+        }
+    }
+}
 
 #[derive(Default)]
 struct HalfDuplexSchedule {
@@ -143,6 +186,8 @@ impl Receiver for SerialReceiver {
         let mut last_telemetry_ms: Option<u64> = None;
         let mut last_deploy_state = 0_u8;
         let mut half_duplex_schedule = HalfDuplexSchedule::default();
+        let mut packet_rate = PacketRateTracker::default();
+        let mut last_stats_emit_ms = 0_u64;
 
         loop {
             tokio::select! {
@@ -173,6 +218,25 @@ impl Receiver for SerialReceiver {
                 _ = resend_tick.tick() => {
                     let now_ms = receive_started.elapsed().as_millis() as u64;
                     update_link_stats(&app_handle, now_ms);
+                    if now_ms.saturating_sub(last_stats_emit_ms) >= STATS_EMIT_INTERVAL_MS {
+                        let packets_per_second = packet_rate.packets_per_second(now_ms);
+                        Self::emit_stats(
+                            &app_handle,
+                            &total_count,
+                            &failed_count,
+                            packets_per_second,
+                        );
+                        last_stats_emit_ms = now_ms;
+                    }
+                    if last_telemetry_ms.is_some_and(|last| {
+                        now_ms.saturating_sub(last) > LINK_LOSS_THRESHOLD_MS
+                    }) {
+                        if let Some(status) = command_manager.cancel_pending_force(
+                            "telemetry link lost; FORCE_RELEASE cancelled and will not be replayed",
+                        ) {
+                            emit_command_status(&app_handle, &status);
+                        }
+                    }
                     if !half_duplex_schedule.command_window_open(now_ms) {
                         continue;
                     }
@@ -241,7 +305,7 @@ impl Receiver for SerialReceiver {
                             half_duplex_schedule.observe_telemetry(telemetry_now_ms);
                             if let Some(previous_ms) = last_telemetry_ms {
                                 let gap_ms = telemetry_now_ms.saturating_sub(previous_ms);
-                                if gap_ms > TELEMETRY_RECOVERY_GAP_MS {
+                                if gap_ms > LINK_LOSS_THRESHOLD_MS {
                                     log_flight_event(
                                         &app_handle,
                                         "WARN",
@@ -250,6 +314,14 @@ impl Receiver for SerialReceiver {
                                 }
                             }
                             last_telemetry_ms = Some(telemetry_now_ms);
+                            packet_rate.observe(telemetry_now_ms);
+                            if let Some(state) = app_handle.try_state::<crate::state::SerialState>() {
+                                state
+                                    .airborne_link
+                                    .lock()
+                                    .unwrap_or_else(|error| error.into_inner())
+                                    .observe_telemetry(payload.session_id, Instant::now());
+                            }
                             if last_deploy_state == 0 && payload.deploy_state == 1 {
                                 log_flight_event(
                                     &app_handle,
@@ -292,7 +364,12 @@ impl Receiver for SerialReceiver {
                                 &payload,
                                 telemetry_now_ms,
                             );
-                            Self::emit_stats(&app_handle, &total_count, &failed_count);
+                            Self::emit_stats(
+                                &app_handle,
+                                &total_count,
+                                &failed_count,
+                                packet_rate.packets_per_second(telemetry_now_ms),
+                            );
                         }
                         ParseResult::Complete(ParsedFrame::Ack(ack)) => {
                             let status = command_manager.handle_ack(&ack);
@@ -311,7 +388,12 @@ impl Receiver for SerialReceiver {
                                 let mut count = total_count.lock().unwrap_or_else(|poison| poison.into_inner());
                                 *count += 1;
                             }
-                            Self::emit_stats(&app_handle, &total_count, &failed_count);
+                            Self::emit_stats(
+                                &app_handle,
+                                &total_count,
+                                &failed_count,
+                                packet_rate.packets_per_second(rx_now_ms),
+                            );
                             record_parse_error(&app_handle, &error);
                         }
                     }
@@ -417,7 +499,7 @@ fn log_flight_event(app_handle: &AppHandle, level: &str, message: &str) {
 
 #[cfg(test)]
 mod tests {
-    use super::{HalfDuplexSchedule, SessionTracker};
+    use super::{HalfDuplexSchedule, PacketRateTracker, SessionTracker};
 
     #[test]
     fn session_tracker_reports_initial_session_and_real_restart_once() {
@@ -460,6 +542,25 @@ mod tests {
         assert!(!schedule.command_window_open(220));
         assert!(schedule.command_window_open(230));
     }
+
+    #[test]
+    fn packet_rate_tracks_the_formal_1800_ms_telemetry_interval() {
+        let mut tracker = PacketRateTracker::default();
+        for now_ms in [0, 1_800, 3_600, 5_400, 7_200, 9_000] {
+            tracker.observe(now_ms);
+        }
+        assert!((tracker.packets_per_second(9_000) - 0.555_555).abs() < 0.001);
+    }
+
+    #[test]
+    fn packet_rate_reports_bursts_and_decays_to_zero_when_idle() {
+        let mut tracker = PacketRateTracker::default();
+        for now_ms in [0, 100, 200] {
+            tracker.observe(now_ms);
+        }
+        assert!((tracker.packets_per_second(200) - 10.0).abs() < 0.001);
+        assert_eq!(tracker.packets_per_second(10_201), 0.0);
+    }
 }
 
 impl SerialReceiver {
@@ -485,13 +586,14 @@ impl SerialReceiver {
         app_handle: &AppHandle,
         total_count: &Arc<Mutex<u64>>,
         failed_count: &Arc<Mutex<u32>>,
+        packets_per_second: f64,
     ) {
         let total = *total_count.lock().unwrap_or_else(|error| error.into_inner());
         let failed = *failed_count.lock().unwrap_or_else(|error| error.into_inner());
         let _ = app_handle.emit("packet-stats", serde_json::json!({
             "totalPackets": total,
             "failedPackets": failed,
-            "packetsPerSecond": 0.0
+            "packetsPerSecond": packets_per_second
         }));
     }
 

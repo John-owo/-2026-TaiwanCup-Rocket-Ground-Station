@@ -1,9 +1,12 @@
 <script lang="ts">
   import { store } from '@/lib/stores.svelte';
+  import { getTelemetryLinkState } from '@/lib/telemetry-link.js';
   import type { PacketStats } from '@/lib/types';
 
   let stats: PacketStats = $derived(store.stats);
   let connected = $derived(store.connected);
+  let flightStats = $derived(store.flightStats);
+  let nowMs = $state(Date.now());
 
   let errorRate = $derived(
     stats.totalPackets > 0 ? (stats.failedPackets / stats.totalPackets) * 100 : 0
@@ -26,6 +29,17 @@
   });
 
   $effect(() => {
+    if (!connected) {
+      nowMs = Date.now();
+      return;
+    }
+    const interval = setInterval(() => {
+      nowMs = Date.now();
+    }, 250);
+    return () => clearInterval(interval);
+  });
+
+  $effect(() => {
     if (!connected || !connectTime) return;
 
     const interval = setInterval(() => {
@@ -39,13 +53,20 @@
     return () => clearInterval(interval);
   });
 
-  let receiving = $derived(connected && stats.totalPackets > 0);
+  let linkState = $derived(getTelemetryLinkState(connected, store.lastPacketAt, nowMs));
+  let receiving = $derived(linkState === 'live');
+  let statusLabel = $derived({
+    standby: '待命',
+    waiting: '等待資料',
+    live: '接收中',
+    lost: '失聯',
+  }[linkState]);
 </script>
 
 <div class="status-bar">
   <div class="status-item">
-    <div class="pulse-dot" class:active={receiving}></div>
-    <span class="status-label">{connected ? '接收中' : '待命'}</span>
+    <div class="pulse-dot" class:active={receiving} class:lost={linkState === 'lost'}></div>
+    <span class="status-label">{statusLabel}</span>
   </div>
 
   <div class="separator"></div>
@@ -58,7 +79,7 @@
   <div class="separator"></div>
 
   <div class="status-item" class:warn={errorRateLevel === 'warn'} class:crit={errorRateLevel === 'crit'}>
-    <span class="status-label">CRC 失敗</span>
+    <span class="status-label">解析失敗</span>
     <span
       class="status-value mono"
       class:text-red={errorRateLevel === 'crit'}
@@ -68,6 +89,13 @@
       {errorRate.toFixed(1)}%
     </span>
     <span class="error-count mono">({stats.failedPackets})</span>
+  </div>
+
+  <div class="separator"></div>
+
+  <div class="status-item">
+    <span class="status-label">CRC 錯誤</span>
+    <span class="status-value mono">{flightStats.crcErrors.toLocaleString()}</span>
   </div>
 
   <div class="separator"></div>
@@ -143,4 +171,5 @@
     background: var(--accent-green);
     animation: pulse 1.5s ease-in-out infinite;
   }
+  .pulse-dot.lost { background: var(--accent-red); box-shadow: 0 0 8px rgba(229, 109, 121, .45); }
 </style>
