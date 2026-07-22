@@ -3,12 +3,23 @@
 *fuse*
 .worktrees/
 
+# Local AI/agent instructions (never publish)
+AGENT.md
+AGENTS.md
+CLAUDE.md
+CODEX.md
+GEMINI.md
+
 # Rust
 src-tauri/target
 
 # Node.js
 src-ui/dist
 src-ui/node_modules
+
+# Python verification cache
+__pycache__/
+*.py[cod]
 
 # Local release outputs
 artifacts/*.exe

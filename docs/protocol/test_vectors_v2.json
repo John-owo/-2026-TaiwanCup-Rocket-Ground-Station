@@ -1,0 +1,62 @@
+{
+  "protocol_version": 2,
+  "vectors": [
+    {
+      "id": "telemetry_nominal_v2",
+      "frame_hex": "A55A0201002F123456780000002A0001E24001790000001E01020304000064FF3803D50005FFFB0708073EF0D8017DF9280000303904E2FFDF271C0A5A2706",
+      "frame": {
+        "frame_type": "TELEMETRY",
+        "flags": 0,
+        "session_id": 305419896,
+        "message_id": 42,
+        "payload": {
+          "uptime_ms": 123456,
+          "restart_reason": 1,
+          "timer_state": 1,
+          "deploy_state": 0,
+          "sensor_flags": 15,
+          "remaining_s": 30,
+          "last_ack_command_id": 16909060,
+          "last_ack_result": 0,
+          "sensors": [1.0, -2.0, 9.80665, 0.5, -0.5, 180.0, 121.5654, 25.033, 123.45, 12.5, -3.25, 1001.23, 26.5]
+        }
+      },
+      "expected": {"parse": "OK", "length": 63}
+    },
+    {
+      "id": "set_timer_nominal_v2",
+      "frame_hex": "A55A0210000412345678010203050000001ED091",
+      "frame": {"frame_type": "SET_TIMER", "flags": 0, "session_id": 305419896, "message_id": 16909061, "payload": {"duration_s": 30}},
+      "expected": {"parse": "OK", "length": 20}
+    },
+    {
+      "id": "set_timer_retry_v2",
+      "duplicate_of": "set_timer_nominal_v2",
+      "frame_hex": "A55A0210010412345678010203050000001EABF0",
+      "frame": {"frame_type": "SET_TIMER", "flags": 1, "session_id": 305419896, "message_id": 16909061, "payload": {"duration_s": 30}},
+      "expected": {"parse": "OK", "length": 20, "command_action": "ACK_DUPLICATE_NO_EXECUTE"}
+    },
+    {
+      "id": "force_release_nominal_v2",
+      "frame_hex": "A55A021100001234567801020306EAA1",
+      "frame": {"frame_type": "FORCE_RELEASE", "flags": 0, "session_id": 305419896, "message_id": 16909062, "payload": {}},
+      "expected": {"parse": "OK", "length": 16}
+    },
+    {
+      "id": "ack_executed_v2",
+      "frame_hex": "A55A027F000712345678010203051000010000001E7ED1",
+      "frame": {"frame_type": "ACK", "flags": 0, "session_id": 305419896, "message_id": 16909061, "payload": {"acked_type": 16, "result": 0, "timer_state": 1, "deploy_state": 0, "remaining_s": 30}},
+      "expected": {"parse": "OK", "length": 23}
+    },
+    {
+      "id": "telemetry_crc_error_v2",
+      "frame_hex": "A55A0201002F123456780000002A0001E24001790000001E01020304000064FF3803D50005FFFB0708073EF0D8017DF9280000303904E2FFDF271C0A5A2707",
+      "expected": {"parse": "CRC_ERROR", "length": 63}
+    },
+    {
+      "id": "telemetry_truncated_v2",
+      "frame_hex": "A55A0201002F123456780000002A0001E24001790000001E01020304000064FF3803D50005FFFB0708073EF0D8017DF9280000303904E2FFDF271C0A5A27",
+      "expected": {"parse": "TRUNCATED", "length": 62}
+    }
+  ]
+}

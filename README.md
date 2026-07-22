@@ -150,9 +150,9 @@ cargo check --locked --manifest-path .\src-tauri/Cargo.toml
 
 地面站同時解析 Protocol v1／v2，並依最近一包有效 telemetry 的版本選擇上行指令格式。完整欄位、定點尺度、ACK 結果碼與 golden vectors 請看：
 
-- [Protocol v1 完整規格](https://github.com/John-owo/TASA-RTC-2026-Avionics-Tests/blob/main/protocol/PROTOCOL_V1.md)
-- [Protocol v2 完整規格](https://github.com/John-owo/TASA-RTC-2026-Avionics-Tests/blob/main/protocol/PROTOCOL_V2.md)
-- [共同測試向量](https://github.com/John-owo/TASA-RTC-2026-Avionics-Tests/tree/main/protocol)
+- [Protocol v1 完整規格](docs/protocol/PROTOCOL_V1.md)
+- [Protocol v2 完整規格](docs/protocol/PROTOCOL_V2.md)
+- [共同測試向量與驗證方式](docs/protocol/README.md)
 
 ### v1／v2 摘要
 
@@ -225,7 +225,7 @@ Protocol v2 的有效旗標與定點溢位規則由 parser 處理；無效感測
 - GPS 地圖需要網路；圖磚載入失敗不會停止 GPS 數值、序列埠或其他遙測。
 - 地圖使用 OpenStreetMap 標準圖磚並保留 attribution；不提供背景預抓、批次下載或離線圖磚。
 
-自動化測試不能取代 E22 半雙工、伺服、假負載與實際開傘機構的現場驗證。完整步驟見 [P0 硬體測試計畫](https://github.com/John-owo/TASA-RTC-2026-Avionics-Tests/blob/main/P0_HARDWARE_TEST_PLAN.md)。
+自動化測試不能取代 E22 半雙工、伺服、假負載與實際開傘機構的現場驗證；完整步驟由團隊硬體測試計畫另行維護。
 
 ## 技術架構
 
@@ -254,8 +254,8 @@ ground_station/
 ├── artifacts/                 # release metadata、checksum、LATEST；portable exe 不入 Git
 ├── docs/
 │   ├── ARCHITECTURE.md        # 詳細分層、資料流與保存流程
+│   ├── protocol/              # Protocol v1/v2 規格、vectors 與驗證腳本
 │   └── images/main-screen.png # 主畫面預覽
-├── AGENTS.md                  # Ground Station release 規則
 └── README.md
 ```
 
@@ -265,8 +265,8 @@ ground_station/
 
 1. 先確認變更範圍，不要把 `target/`、`node_modules/` 或 `artifacts/*.exe` 加入 Git。
 2. 應用程式／UI 變更完成後，依 [安裝與開發](#安裝與開發) 執行 frontend test／check／build、Rust test／check 與 Tauri no-bundle build。
-3. 若產生新 release，遵循 [`AGENTS.md`](AGENTS.md) 的 artifact、metadata、GitHub Release 與下載後 checksum 驗證流程。
-4. 使用 `codex/` 前綴建立工作分支，並在 PR 或 commit 說明驗證證據與硬體測試是否仍待完成。
+3. 若產生新 release，依本文件的 artifact、metadata、GitHub Release 與下載後 checksum 驗證流程執行。
+4. 使用 `feature/` 或 `docs/` 前綴建立工作分支，並在 PR 或 commit 說明驗證證據與硬體測試是否仍待完成。
 
 ## 授權
 

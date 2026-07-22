@@ -1,0 +1,154 @@
+{
+  "protocol_version": 1,
+  "byte_order": "big-endian",
+  "crc": "CRC-16/CCITT-FALSE",
+  "vectors": [
+    {
+      "id": "telemetry_nominal",
+      "category": "normal",
+      "frame_hex": "A55A010100140048123456780000002A000000000001E2400101000F0000001E01020304000000003F800000C0000000411CE80A3F000000BF0000004334000042F3217C41C8439642F6E66641480000C0500000447A4EB841D400001B23",
+      "expected": {
+        "parse": "OK",
+        "length": 94,
+        "frame_type": "TELEMETRY"
+      },
+      "frame": {
+        "frame_type": "TELEMETRY",
+        "flags": 0,
+        "session_id": 305419896,
+        "frame_seq": 42,
+        "command_id": 0,
+        "payload": {
+          "uptime_ms": 123456,
+          "restart_reason": 1,
+          "timer_state": 1,
+          "deploy_state": 0,
+          "sensor_flags": 15,
+          "remaining_s": 30,
+          "last_ack_command_id": 16909060,
+          "last_ack_result": 0,
+          "sensors": [
+            1.0,
+            -2.0,
+            9.80665,
+            0.5,
+            -0.5,
+            180.0,
+            121.5654,
+            25.033,
+            123.45,
+            12.5,
+            -3.25,
+            1001.23,
+            26.5
+          ]
+        }
+      }
+    },
+    {
+      "id": "set_timer_nominal",
+      "category": "normal",
+      "frame_hex": "A55A0110001400041234567800000007010203050000001E688E",
+      "expected": {
+        "parse": "OK",
+        "length": 26,
+        "frame_type": "SET_TIMER",
+        "command_action": "EXECUTE_ONCE"
+      },
+      "frame": {
+        "frame_type": "SET_TIMER",
+        "flags": 0,
+        "session_id": 305419896,
+        "frame_seq": 7,
+        "command_id": 16909061,
+        "payload": {
+          "duration_s": 30
+        }
+      }
+    },
+    {
+      "id": "set_timer_retry_duplicate",
+      "category": "duplicate",
+      "duplicate_of": "set_timer_nominal",
+      "frame_hex": "A55A0110011400041234567800000008010203050000001EC569",
+      "expected": {
+        "parse": "OK",
+        "length": 26,
+        "frame_type": "SET_TIMER",
+        "command_action": "ACK_DUPLICATE_NO_EXECUTE"
+      },
+      "frame": {
+        "frame_type": "SET_TIMER",
+        "flags": 1,
+        "session_id": 305419896,
+        "frame_seq": 8,
+        "command_id": 16909061,
+        "payload": {
+          "duration_s": 30
+        }
+      }
+    },
+    {
+      "id": "force_release_nominal",
+      "category": "normal",
+      "frame_hex": "A55A01110014000012345678000000090102030663D1",
+      "expected": {
+        "parse": "OK",
+        "length": 22,
+        "frame_type": "FORCE_RELEASE",
+        "command_action": "EXECUTE_ONCE"
+      },
+      "frame": {
+        "frame_type": "FORCE_RELEASE",
+        "flags": 0,
+        "session_id": 305419896,
+        "frame_seq": 9,
+        "command_id": 16909062,
+        "payload": {}
+      }
+    },
+    {
+      "id": "ack_executed_nominal",
+      "category": "normal",
+      "frame_hex": "A55A017F00140008123456780000002B01020305100001000000001EAA56",
+      "expected": {
+        "parse": "OK",
+        "length": 30,
+        "frame_type": "ACK"
+      },
+      "frame": {
+        "frame_type": "ACK",
+        "flags": 0,
+        "session_id": 305419896,
+        "frame_seq": 43,
+        "command_id": 16909061,
+        "payload": {
+          "acked_type": 16,
+          "result": 0,
+          "timer_state": 1,
+          "deploy_state": 0,
+          "remaining_s": 30
+        }
+      }
+    },
+    {
+      "id": "set_timer_bad_crc",
+      "category": "crc_error",
+      "frame_hex": "A55A0110001400041234567800000007010203050000001E688F",
+      "expected": {
+        "parse": "CRC_ERROR",
+        "length": 26
+      }
+    },
+    {
+      "id": "set_timer_truncated",
+      "category": "truncated",
+      "frame_hex": "A55A011000140004123456780000000701020305000000",
+      "expected": {
+        "parse": "TRUNCATED",
+        "length": 23,
+        "declared_length": 26
+      }
+    }
+  ]
+}
