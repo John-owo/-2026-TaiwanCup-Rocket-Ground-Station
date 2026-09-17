@@ -99,6 +99,8 @@ Get-Content .\GroundStation_0.1.3_Portable_2026-07-20_230808.sha256
 
 Rust 可由 [rustup.rs](https://rustup.rs/) 安裝；pnpm 可用 `npm install -g pnpm` 安裝。Windows 開發環境亦須具備 Tauri 所需的 WebView2 與 C++ build tools。
 
+> **路徑提醒**：請把 repository 放在只含 ASCII 字元的路徑（例如 `C:\dev\ground_station`）。在含中文的路徑下，部分 crate 的 build script 與 Tauri 的 schema 產生器曾出現「找不到檔案」或「存取被拒」而無法編譯；單獨改 `CARGO_TARGET_DIR` 不足以解決，需把整個 repository 放到 ASCII 路徑。
+
 ### 安裝相依套件
 
 從本 repository 根目錄 `ground_station/` 執行：
@@ -233,7 +235,8 @@ README 只保留系統邊界與資料流摘要；逐檔案說明、儲存生命�
 
 ```mermaid
 graph LR
-    A[火箭航電 / E22 Serial] --> B[Rust Serial Receiver]
+    A[火箭航電 / LoRa 模組] --> L[Link Transport: Serial / TCP / Memory]
+    L --> B[Rust LinkReceiver]
     B --> C[Protocol v1/v2 Parser]
     C --> D[Rust Commands & Services]
     D --> E[Svelte 5 UI]
@@ -250,7 +253,10 @@ graph LR
 ```text
 ground_station/
 ├── src-ui/                    # Svelte 5 + Vite 前端與前端測試
-├── src-tauri/                 # Rust／Tauri 後端、serial parser、SQLite migration
+├── src-tauri/                 # Rust／Tauri 後端、link transport、protocol parser、SQLite migration
+│   └── src/infrastructures/
+│       ├── link/              # Serial／TCP／Memory 傳輸層與 TransportConfig
+│       └── serial/            # CRC、parser、command encoder、LinkReceiver 協定 session
 ├── artifacts/                 # release metadata、checksum、LATEST；portable exe 不入 Git
 ├── docs/
 │   ├── ARCHITECTURE.md        # 詳細分層、資料流與保存流程
