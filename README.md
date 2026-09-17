@@ -99,7 +99,7 @@ Get-Content .\GroundStation_0.1.3_Portable_2026-07-20_230808.sha256
 
 Rust 可由 [rustup.rs](https://rustup.rs/) 安裝；pnpm 可用 `npm install -g pnpm` 安裝。Windows 開發環境亦須具備 Tauri 所需的 WebView2 與 C++ build tools。
 
-> **路徑提醒**：請把 repository 放在只含 ASCII 字元的路徑（例如 `C:\dev\ground_station`）。在含中文的路徑下，部分 crate 的 build script 與 Tauri 的 schema 產生器曾出現「找不到檔案」或「存取被拒」而無法編譯；單獨改 `CARGO_TARGET_DIR` 不足以解決，需把整個 repository 放到 ASCII 路徑。
+> **路徑提醒**：請勿把 repository 放在 Windows Defender「受控資料夾存取」（Controlled Folder Access）保護的資料夾內，例如 `Documents`、`Desktop`、`Pictures`。Cargo 每次都會重新編譯各 crate 的 build script（`build-script-build.exe`），對 Defender 而言是未知程式，寫入受保護資料夾時會被封鎖，表現為 `serde`／`proc-macro2`／`thiserror` 等 build script 回報「找不到檔案」或 Tauri 產生 `src-tauri/gen/schemas` 時「存取被拒」，並在事件檢視器 `Microsoft-Windows-Windows Defender/Operational` 留下事件 1123。單獨改 `CARGO_TARGET_DIR` 不夠，因為 Tauri 仍需寫入 `src-tauri/gen`。建議放在 `C:\dev\ground_station` 這類未受保護的路徑；路徑是否含中文與此問題無關。
 
 ### 安裝相依套件
 
