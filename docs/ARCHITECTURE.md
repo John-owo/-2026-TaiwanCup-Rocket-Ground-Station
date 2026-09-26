@@ -196,4 +196,6 @@ stateDiagram-v2
 | Rust check | `cargo check --locked --manifest-path .\src-tauri/Cargo.toml` | release 前型別與相依檢查 |
 | Windows release | Tauri `build --no-bundle` | `src-tauri/target/release/app.exe` portable 殼 |
 
+`infrastructures/link/protocol_tests.rs` 以 MemoryTransport 串接正式 parser 與 CommandManager，使用共同測試向量驗證 v1/v2 分段與合併遙測、CRC 錯誤後重新同步，以及 v2 timer 重送與 ACK 往返。這組測試不啟動 Tauri、不讀寫場次資料，也不開啟實體序列埠。
+
 自動驗證通過不等於硬體驗證完成；E22 半雙工、伺服一次性動作、FORCE 假負載與端到端 UI 對照仍須依硬體測試計畫執行。
