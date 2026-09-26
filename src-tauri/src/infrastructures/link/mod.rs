@@ -22,6 +22,9 @@ pub mod memory;
 pub mod serial;
 pub mod tcp;
 
+#[cfg(test)]
+mod protocol_tests;
+
 use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::pin::Pin;
