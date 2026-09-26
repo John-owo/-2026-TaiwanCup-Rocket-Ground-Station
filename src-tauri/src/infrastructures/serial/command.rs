@@ -419,8 +419,8 @@ mod tests {
     use super::*;
     use serde_json::Value;
 
-    const V1_VECTORS: &str = include_str!("../../../../../protocol/test_vectors_v1.json");
-    const V2_VECTORS: &str = include_str!("../../../../../protocol/test_vectors_v2.json");
+    const V1_VECTORS: &str = include_str!("../../../../docs/protocol/test_vectors_v1.json");
+    const V2_VECTORS: &str = include_str!("../../../../docs/protocol/test_vectors_v2.json");
 
     fn vector_hex(document: &str, vector_id: &str) -> String {
         let document: Value = serde_json::from_str(document).unwrap();

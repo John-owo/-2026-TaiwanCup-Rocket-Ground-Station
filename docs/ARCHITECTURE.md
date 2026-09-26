@@ -29,7 +29,8 @@ flowchart LR
 | `src-tauri/` | Tauri v2 shell、Rust command／service／infrastructure／state、SQLite migration |
 | `src-tauri/src/commands/` | 對前端公開的開始／停止場次、序列埠、timer、FORCE 與歷史資料命令 |
 | `src-tauri/src/services/` | `Parser`、`Receiver`、frame decoder 與 notification trait 邊界 |
-| `src-tauri/src/infrastructures/serial/` | CRC、stream parser、frame encoder、非同步 serial receiver |
+| `src-tauri/src/infrastructures/link/` | 可替換的位元組傳輸層：`Transport` trait、serial／TCP／memory 實作與 `TransportConfig` |
+| `src-tauri/src/infrastructures/serial/` | CRC、stream parser、frame encoder、跑在任一 link 之上的 `LinkReceiver` 協定 session |
 | `src-tauri/src/infrastructures/flight.rs` | 地面站上行 command queue、ACK 配對與 session 變更策略 |
 | `src-tauri/src/state/serial_state.rs` | COM、receiver cancellation、command channel、統計與場次狀態 |
 | `src-tauri/src/state/storage_state.rs` | 單一 FIFO writer、SQLite／CSV／Log sink、磁碟檢查與復原 |
@@ -62,6 +63,20 @@ Models / DTOs
 - 暴露 `get_telemetry_history`、`get_flight_stats`、`set_timer` 與 `force_release`。
 - 確保取消場次、序列異常、程式退出與既有未完成場次復原時都有明確狀態。
 
+### Link layer
+
+`src-tauri/src/infrastructures/link/` 把「位元組從哪裡來」與「位元組代表什麼」分開。協定層只需要一條雙向 byte pipe，所以任何能提供 `AsyncRead + AsyncWrite` 的載體都可以承載同一套協定：
+
+| 實作 | 用途 | 能力 |
+|------|------|------|
+| `serial::SerialTransport` | COM 埠：TTL-to-USB、USB CDC 或任何 OS 序列裝置 | stream、全雙工管線 |
+| `tcp::TcpTransport` | FPGA／Ethernet bridge、serial-to-TCP gateway，5 秒連線逾時並開 `TCP_NODELAY` | stream、全雙工管線 |
+| `memory::MemoryTransport` | 測試與回放：`tokio::io::duplex` 的一端給地面站，另一端由測試注入遙測 | stream、全雙工管線 |
+
+`TransportConfig` 是可序列化的描述（`{"kind":"serial",...}`／`{"kind":"tcp",...}`），由 command 層轉成 `Box<dyn Transport>` 再 `open()` 成 `LinkIo`。`LinkCapabilities` 只描述管線本身；無線電模組是否半雙工屬於 `HalfDuplexTiming`，兩者刻意分開，因為 E22 接在 TCP bridge 後面仍然需要同一段上行靜默時窗。
+
+目前 `start_test_monitoring` 仍接收 `path`／`baud_rate` 並在後端組成 `TransportConfig::Serial`；讓 UI 直接選擇 transport 與模組 profile 是下一階段的工作。E22 RSSI 附加 byte、固定模式位址 header 與 AT 指令設定屆時會放在 `LinkIo` 與 parser 之間的模組 adapter 層，link 層本身不認識 LoRa。
+
 ### Serial parser and receiver
 
 `src-tauri/src/infrastructures/serial/parser.rs` 以 stream parser 處理可能被切段、黏包或含雜訊的 UART bytes：
@@ -73,7 +88,16 @@ Models / DTOs
 5. 將兩版轉換成相同的 `TelemetryPayload`，再交給 UI、統計與 storage。
 6. frame 錯誤時從下一個可能的 magic 重新同步，不讓單一錯誤卡住 receiver。
 
-`receiver.rs` 只維持一個主要接收迴圈；合格遙測會送往事件通知、flight statistics 與單一 FIFO writer。儲存 queue 滿載時回報遺失寫入，但不阻塞遙測畫面與安全控制。
+`receiver.rs` 的 `LinkReceiver` 只負責 `connect(TransportConfig)` 與 `start_receive()`；每一場的協定狀態集中在 `LinkSession`，`select!` 迴圈只做事件分派：
+
+| 事件 | handler | 內容 |
+|------|---------|------|
+| cancellation token | 直接 return | 正常停止 |
+| UI 指令 | `on_command_request` | 交給 `CommandManager` 排隊 |
+| 100 ms tick | `on_tick` | 統計、link-loss 取消 FORCE、半雙工時窗判定；**唯一會寫入 link 的地方** |
+| link 讀到 bytes | `on_rx_bytes` → `on_telemetry`／ACK／`on_parse_error` | 逐 byte 餵 parser，一次讀最多 512 bytes |
+
+合格遙測會送往事件通知、flight statistics 與單一 FIFO writer。儲存 queue 滿載時回報遺失寫入，但不阻塞遙測畫面與安全控制。link 被對端關閉（讀到 0 bytes）與讀寫錯誤一律走 `serial-error` 事件結束場次。
 
 ### Protocol and flight command queue
 
@@ -168,8 +192,10 @@ stateDiagram-v2
 | Frontend | `pnpm --dir .\src-ui test` | 姿態、GPS、session、flight control、link、UI copy、repository policy |
 | Frontend check | `pnpm --dir .\src-ui check` | Svelte diagnostics 與 TypeScript |
 | Frontend build | `pnpm --dir .\src-ui build` | Vite production bundle |
-| Rust | `cargo test --locked --manifest-path .\src-tauri/Cargo.toml` | parser、flight queue、storage、migration 與統計 |
+| Rust | `cargo test --locked --manifest-path .\src-tauri/Cargo.toml` | parser、flight queue、storage、migration、統計、link transport（serial config、TCP loopback、memory pipe）與半雙工時窗 |
 | Rust check | `cargo check --locked --manifest-path .\src-tauri/Cargo.toml` | release 前型別與相依檢查 |
 | Windows release | Tauri `build --no-bundle` | `src-tauri/target/release/app.exe` portable 殼 |
+
+`infrastructures/link/protocol_tests.rs` 以 MemoryTransport 串接正式 parser 與 CommandManager，使用共同測試向量驗證 v1/v2 分段與合併遙測、CRC 錯誤後重新同步，以及 v2 timer 重送與 ACK 往返。這組測試不啟動 Tauri、不讀寫場次資料，也不開啟實體序列埠。
 
 自動驗證通過不等於硬體驗證完成；E22 半雙工、伺服一次性動作、FORCE 假負載與端到端 UI 對照仍須依硬體測試計畫執行。

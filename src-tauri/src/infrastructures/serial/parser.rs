@@ -476,8 +476,8 @@ mod tests {
     use crate::services::serial::Parser;
     use serde_json::Value;
 
-    const V1_VECTORS: &str = include_str!("../../../../../protocol/test_vectors_v1.json");
-    const V2_VECTORS: &str = include_str!("../../../../../protocol/test_vectors_v2.json");
+    const V1_VECTORS: &str = include_str!("../../../../docs/protocol/test_vectors_v1.json");
+    const V2_VECTORS: &str = include_str!("../../../../docs/protocol/test_vectors_v2.json");
 
     fn hex_bytes(text: &str) -> Vec<u8> {
         (0..text.len())

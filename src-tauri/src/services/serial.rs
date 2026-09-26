@@ -1,3 +1,4 @@
+use crate::infrastructures::link::TransportConfig;
 use crate::infrastructures::serial::parser::ParseResult;
 use crate::models::response::TelemetryPayload;
 
@@ -9,11 +10,13 @@ pub trait Parser {
     fn parse_to_payload(&self, frame: &[u8]) -> Result<TelemetryPayload, String>;
 }
 
-/// 序列埠接收器 Trait
+/// 鏈路接收器 Trait
+///
+/// 接收器只依賴 `infrastructures::link` 提供的位元組管線，不知道底下是
+/// COM 埠、TCP bridge 還是測試用的記憶體管線。
 pub trait Receiver {
-    async fn get_connection(&mut self, path: String, baud_rate: u32) -> Result<(), String>;
+    async fn connect(&mut self, config: TransportConfig) -> Result<(), String>;
     async fn start_receive(&mut self) -> Result<String, String>;
-    async fn receive_task(&mut self) -> Result<String, String>;
 }
 
 /// 二進位解碼器 Trait：將完整 Protocol v1/v2 frame 轉換成 TelemetryPayload。

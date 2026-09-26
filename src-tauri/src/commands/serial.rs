@@ -1,6 +1,7 @@
 use crate::infrastructures::flight::{FlightSessionMetadata, FlightStats};
 use crate::infrastructures::serial::command::CommandRequest;
-use crate::infrastructures::serial::receiver::SerialReceiver;
+use crate::infrastructures::link::TransportConfig;
+use crate::infrastructures::serial::receiver::LinkReceiver;
 use crate::models::response::{
     InvokeError, InvokeResult, StoragePhase, StorageStatus, TestRunPhase, TestSessionStatus,
 };
@@ -134,12 +135,19 @@ pub async fn start_test_monitoring(
     set_session_status(&serial_state, &app_handle, starting);
 
     let (command_tx, command_rx) = tokio::sync::mpsc::unbounded_channel();
-    let mut receiver = SerialReceiver::new(
+    let mut receiver = LinkReceiver::new(
         app_handle.clone(),
         cancellation_token.clone(),
         command_rx,
     );
-    if let Err(error) = receiver.get_connection(path.clone(), baud_rate).await {
+    // The UI still speaks in COM port terms; the link layer turns that into a
+    // transport. A later step will let the UI pick TCP or other transports.
+    let transport = TransportConfig::Serial {
+        path: path.clone(),
+        baud_rate,
+    };
+    let transport_label = transport.label();
+    if let Err(error) = receiver.connect(transport).await {
         release_monitoring(&serial_state, &cancellation_token);
         set_session_status(
             &serial_state,
@@ -211,7 +219,7 @@ pub async fn start_test_monitoring(
         let _ = storage_state.enqueue_event(
             &app_handle,
             "INFO",
-            format!("serial connected: {path} @ {baud_rate}"),
+            format!("serial connected: {transport_label}"),
         );
     }
 

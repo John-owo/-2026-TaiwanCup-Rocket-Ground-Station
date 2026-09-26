@@ -99,6 +99,8 @@ Get-Content .\GroundStation_0.1.3_Portable_2026-07-20_230808.sha256
 
 Rust 可由 [rustup.rs](https://rustup.rs/) 安裝；pnpm 可用 `npm install -g pnpm` 安裝。Windows 開發環境亦須具備 Tauri 所需的 WebView2 與 C++ build tools。
 
+> **路徑提醒**：請勿把 repository 放在 Windows Defender「受控資料夾存取」（Controlled Folder Access）保護的資料夾內，例如 `Documents`、`Desktop`、`Pictures`。Cargo 每次都會重新編譯各 crate 的 build script（`build-script-build.exe`），對 Defender 而言是未知程式，寫入受保護資料夾時會被封鎖，表現為 `serde`／`proc-macro2`／`thiserror` 等 build script 回報「找不到檔案」或 Tauri 產生 `src-tauri/gen/schemas` 時「存取被拒」，並在事件檢視器 `Microsoft-Windows-Windows Defender/Operational` 留下事件 1123。單獨改 `CARGO_TARGET_DIR` 不夠，因為 Tauri 仍需寫入 `src-tauri/gen`。建議放在 `C:\dev\ground_station` 這類未受保護的路徑；路徑是否含中文與此問題無關。
+
 ### 安裝相依套件
 
 從本 repository 根目錄 `ground_station/` 執行：
@@ -233,7 +235,8 @@ README 只保留系統邊界與資料流摘要；逐檔案說明、儲存生命�
 
 ```mermaid
 graph LR
-    A[火箭航電 / E22 Serial] --> B[Rust Serial Receiver]
+    A[火箭航電 / LoRa 模組] --> L[Link Transport: Serial / TCP / Memory]
+    L --> B[Rust LinkReceiver]
     B --> C[Protocol v1/v2 Parser]
     C --> D[Rust Commands & Services]
     D --> E[Svelte 5 UI]
@@ -250,7 +253,10 @@ graph LR
 ```text
 ground_station/
 ├── src-ui/                    # Svelte 5 + Vite 前端與前端測試
-├── src-tauri/                 # Rust／Tauri 後端、serial parser、SQLite migration
+├── src-tauri/                 # Rust／Tauri 後端、link transport、protocol parser、SQLite migration
+│   └── src/infrastructures/
+│       ├── link/              # Serial／TCP／Memory 傳輸層與 TransportConfig
+│       └── serial/            # CRC、parser、command encoder、LinkReceiver 協定 session
 ├── artifacts/                 # release metadata、checksum、LATEST；portable exe 不入 Git
 ├── docs/
 │   ├── ARCHITECTURE.md        # 詳細分層、資料流與保存流程
