@@ -239,10 +239,6 @@ impl Parser for PacketParser {
         self.buffer.push(byte);
         self.try_parse()
     }
-
-    fn parse_to_payload(&self, frame: &[u8]) -> Result<TelemetryPayload, String> {
-        self.decoder.decode(frame)
-    }
 }
 
 pub struct TelemetryDecoder;
