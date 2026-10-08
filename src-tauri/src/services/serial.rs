@@ -1,13 +1,11 @@
 use crate::infrastructures::link::TransportConfig;
 use crate::infrastructures::serial::parser::ParseResult;
-use crate::models::response::TelemetryPayload;
 
 /// 封包解析器 Trait
 /// 負責 Protocol v1/v2 stream framing、CRC 與 payload 解碼。
 pub trait Parser {
     fn default() -> Self;
     fn sink(&mut self, byte: u8) -> ParseResult;
-    fn parse_to_payload(&self, frame: &[u8]) -> Result<TelemetryPayload, String>;
 }
 
 /// 鏈路接收器 Trait

@@ -28,7 +28,7 @@ flowchart LR
 | `src-ui/` | Svelte 5 UI、Vite 設定、前端單元測試與 production build |
 | `src-tauri/` | Tauri v2 shell、Rust command／service／infrastructure／state、SQLite migration |
 | `src-tauri/src/commands/` | 對前端公開的開始／停止場次、序列埠、timer、FORCE 與歷史資料命令 |
-| `src-tauri/src/services/` | `Parser`、`Receiver`、frame decoder 與 notification trait 邊界 |
+| `src-tauri/src/services/` | `Parser`、`Receiver` 與 frame decoder 的 trait 邊界 |
 | `src-tauri/src/infrastructures/link/` | 可替換的位元組傳輸層：`Transport` trait、serial／TCP／memory 實作與 `TransportConfig` |
 | `src-tauri/src/infrastructures/serial/` | CRC、stream parser、frame encoder、跑在任一 link 之上的 `LinkReceiver` 協定 session |
 | `src-tauri/src/infrastructures/flight.rs` | 地面站上行 command queue、ACK 配對與 session 變更策略 |
