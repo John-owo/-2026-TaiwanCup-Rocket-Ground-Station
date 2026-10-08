@@ -4,13 +4,13 @@
 ![Rust](https://img.shields.io/badge/Rust-1.77%2B-orange)
 ![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
-![Version](https://img.shields.io/badge/version-0.1.3-informational)
+![Version](https://img.shields.io/badge/version-0.1.4-informational)
 
 > 2026 台灣盃火箭競賽「五限可能」地面站監控系統：給地面站操作員即時接收、視覺化、記錄與安全控制火箭遙測資料。
 
 本專案是以 **Tauri v2 + Rust + Svelte 5** 開發的 Windows 桌面應用程式，透過序列埠接收 E22 無線鏈路下傳的遙測，並提供 GPS、姿態估算、雙向倒數控制、強制釋放安全鎖與可稽核的場次資料保存。
 
-最新 portable 版本：[GitHub Releases](https://github.com/John-owo/-2026-TaiwanCup-Rocket-Ground-Station/releases/latest) · 最新驗證版本 `v0.1.3`
+最新 portable 版本：[GitHub Releases](https://github.com/John-owo/-2026-TaiwanCup-Rocket-Ground-Station/releases/latest) · 最新驗證版本 `v0.1.4`
 
 ## 畫面預覽
 
@@ -39,15 +39,15 @@
 ### 直接使用 Windows portable 版本
 
 1. 從 [最新 GitHub Release](https://github.com/John-owo/-2026-TaiwanCup-Rocket-Ground-Station/releases/latest) 下載 `.exe`、`.json` 與 `.sha256`。
-2. 先核對 checksum，再開啟 portable `.exe`。目前最新驗證檔案為 `GroundStation_0.1.3_Portable_2026-07-20_230808.exe`。
+2. 先核對 checksum，再開啟 portable `.exe`。目前最新驗證檔案為 `GroundStation_0.1.4_Portable_2026-10-08_175526.exe`。
 3. 接上地面端序列裝置，開啟程式後掃描並選擇 COM Port 與正確 Baud Rate。
 4. 按「開始監控」，填寫測試目的、操作者、地點與起始電池電壓；確認後才會開啟 COM、建立 UUID 場次並開始接收。
 
 PowerShell checksum 核對範例：
 
 ```powershell
-Get-FileHash .\GroundStation_0.1.3_Portable_2026-07-20_230808.exe -Algorithm SHA256
-Get-Content .\GroundStation_0.1.3_Portable_2026-07-20_230808.sha256
+Get-FileHash .\GroundStation_0.1.4_Portable_2026-10-08_175526.exe -Algorithm SHA256
+Get-Content .\GroundStation_0.1.4_Portable_2026-10-08_175526.sha256
 ```
 
 目前 release metadata 與 checksum 也保存在 [`artifacts/`](artifacts/)；最新檔名與 release tag 見 [`artifacts/LATEST.txt`](artifacts/LATEST.txt)。`.exe` 不提交到一般 Git 歷史，只透過版本化 GitHub Release 發布。
@@ -165,7 +165,7 @@ cargo check --locked --manifest-path .\src-tauri/Cargo.toml
 3. `.exe` 不加入 Git；原始碼與 metadata commit／push 後，把 `.exe`、manifest 與 checksum 上傳到新的版本化 GitHub Release。
 4. 從 GitHub Release 重新下載全部資產，核對 release 狀態、檔名、大小與 SHA-256 後，才可宣告 release 完成。
 
-最新已驗證 metadata：[`GroundStation_0.1.3_Portable_2026-07-20_230808.json`](artifacts/GroundStation_0.1.3_Portable_2026-07-20_230808.json)。驗證包含 frontend 48 passed、Svelte／TypeScript 0 errors／0 warnings、production build、Rust 31 passed、`cargo check --locked`、SQLite migration readback 與 Tauri no-bundle build。
+最新已驗證 metadata：[`GroundStation_0.1.4_Portable_2026-10-08_175526.json`](artifacts/GroundStation_0.1.4_Portable_2026-10-08_175526.json)。驗證包含 frontend 53 passed、Svelte／TypeScript 0 errors／0 warnings、production build、Rust 44 passed、`cargo check --locked` 與 Tauri no-bundle build。v0.1.4 的新介面只在瀏覽器示範模式驗證過，實機 Tauri 視窗與 E22 硬體測試仍待完成。
 
 ## 遙測封包格式
 
