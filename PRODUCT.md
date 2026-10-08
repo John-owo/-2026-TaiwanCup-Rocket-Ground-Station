@@ -37,7 +37,8 @@ None binding. The team name will change, so the UI must not hard-code a team nam
 
 ## Evidence on Hand
 
-- `docs/images/main-screen.png`: screenshot of the previous (AI-generated) design, an anti-reference only.
+- `docs/images/ground-station-day.png` / `ground-station-night.png`: current design, captured in browser demo mode (synthetic data).
+- The previous AI-generated design (anti-reference only) is `docs/images/main-screen.png` at commit `d5431fb`.
 - No real flight dataset is committed; demo values must be labelled as such and never presented as real flight results.
 
 ## Product Principles
