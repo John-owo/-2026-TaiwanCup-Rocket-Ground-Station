@@ -1,0 +1,803 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-08T09:46:02.435Z",
+  "title": "Design System: 地面站 Ground Station",
+  "extensions": {
+    "colorMeta": {
+      "chart-paper": {
+        "role": "neutral",
+        "displayName": "圖紙 Chart Paper",
+        "canonical": "#edf0ea",
+        "cssVar": "--paper",
+        "darkValue": "#0d1522",
+        "oklch": "oklch(95.1% 0.009 128.6)",
+        "tonalRamp": [
+          "oklch(15.0% 0.004 128.6)",
+          "oklch(26.4% 0.005 128.6)",
+          "oklch(37.9% 0.006 128.6)",
+          "oklch(49.3% 0.006 128.6)",
+          "oklch(60.7% 0.007 128.6)",
+          "oklch(72.1% 0.007 128.6)",
+          "oklch(83.6% 0.008 128.6)",
+          "oklch(95.0% 0.009 128.6)"
+        ]
+      },
+      "chart-paper-shade": {
+        "role": "neutral",
+        "displayName": "圖紙暗面 Chart Paper Shade",
+        "canonical": "#e3e8e1",
+        "cssVar": "--paper-2",
+        "darkValue": "#0a111c",
+        "oklch": "oklch(92.5% 0.011 136.6)",
+        "tonalRamp": [
+          "oklch(15.0% 0.006 136.6)",
+          "oklch(26.4% 0.006 136.6)",
+          "oklch(37.9% 0.007 136.6)",
+          "oklch(49.3% 0.008 136.6)",
+          "oklch(60.7% 0.009 136.6)",
+          "oklch(72.1% 0.009 136.6)",
+          "oklch(83.6% 0.010 136.6)",
+          "oklch(95.0% 0.011 136.6)"
+        ]
+      },
+      "sheet": {
+        "role": "neutral",
+        "displayName": "圖頁 Sheet",
+        "canonical": "#f6f8f4",
+        "cssVar": "--sheet",
+        "darkValue": "#131e2e",
+        "oklch": "oklch(97.7% 0.006 128.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.003 128.5)",
+          "oklch(26.4% 0.003 128.5)",
+          "oklch(37.9% 0.004 128.5)",
+          "oklch(49.3% 0.004 128.5)",
+          "oklch(60.7% 0.004 128.5)",
+          "oklch(72.1% 0.005 128.5)",
+          "oklch(83.6% 0.005 128.5)",
+          "oklch(95.0% 0.006 128.5)"
+        ]
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "欄位 Field",
+        "canonical": "#ffffff",
+        "cssVar": "--field",
+        "darkValue": "#0a111c",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 89.9)",
+          "oklch(26.4% 0.000 89.9)",
+          "oklch(37.9% 0.000 89.9)",
+          "oklch(49.3% 0.000 89.9)",
+          "oklch(60.7% 0.000 89.9)",
+          "oklch(72.1% 0.000 89.9)",
+          "oklch(83.6% 0.000 89.9)",
+          "oklch(95.0% 0.000 89.9)"
+        ]
+      },
+      "navy-ink": {
+        "role": "neutral",
+        "displayName": "海軍藍墨 Navy Ink",
+        "canonical": "#0f1b2d",
+        "cssVar": "--ink",
+        "darkValue": "#dce5ee",
+        "oklch": "oklch(22.1% 0.039 258.3)",
+        "tonalRamp": [
+          "oklch(15.0% 0.038 258.3)",
+          "oklch(26.4% 0.038 258.3)",
+          "oklch(37.9% 0.036 258.3)",
+          "oklch(49.3% 0.033 258.3)",
+          "oklch(60.7% 0.030 258.3)",
+          "oklch(72.1% 0.028 258.3)",
+          "oklch(83.6% 0.025 258.3)",
+          "oklch(95.0% 0.022 258.3)"
+        ]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "次要墨 Ink Secondary",
+        "canonical": "#435168",
+        "cssVar": "--ink-2",
+        "darkValue": "#a3b1c2",
+        "oklch": "oklch(43.2% 0.042 260.2)",
+        "tonalRamp": [
+          "oklch(15.0% 0.035 260.2)",
+          "oklch(26.4% 0.038 260.2)",
+          "oklch(37.9% 0.041 260.2)",
+          "oklch(49.3% 0.041 260.2)",
+          "oklch(60.7% 0.038 260.2)",
+          "oklch(72.1% 0.035 260.2)",
+          "oklch(83.6% 0.032 260.2)",
+          "oklch(95.0% 0.029 260.2)"
+        ]
+      },
+      "ink-tertiary": {
+        "role": "neutral",
+        "displayName": "三級墨 Ink Tertiary",
+        "canonical": "#5f6c80",
+        "cssVar": "--ink-3",
+        "darkValue": "#8593a6",
+        "oklch": "oklch(52.8% 0.035 258.9)",
+        "tonalRamp": [
+          "oklch(15.0% 0.027 258.9)",
+          "oklch(26.4% 0.030 258.9)",
+          "oklch(37.9% 0.032 258.9)",
+          "oklch(49.3% 0.035 258.9)",
+          "oklch(60.7% 0.034 258.9)",
+          "oklch(72.1% 0.031 258.9)",
+          "oklch(83.6% 0.029 258.9)",
+          "oklch(95.0% 0.026 258.9)"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "髮絲線 Hairline",
+        "canonical": "#c6cec5",
+        "cssVar": "--rule",
+        "darkValue": "#26344a",
+        "oklch": "oklch(84.3% 0.015 142.2)",
+        "tonalRamp": [
+          "oklch(15.0% 0.009 142.2)",
+          "oklch(26.4% 0.010 142.2)",
+          "oklch(37.9% 0.011 142.2)",
+          "oklch(49.3% 0.012 142.2)",
+          "oklch(60.7% 0.013 142.2)",
+          "oklch(72.1% 0.014 142.2)",
+          "oklch(83.6% 0.015 142.2)",
+          "oklch(95.0% 0.014 142.2)"
+        ]
+      },
+      "hairline-strong": {
+        "role": "neutral",
+        "displayName": "強髮絲線 Hairline Strong",
+        "canonical": "#9eaaa0",
+        "cssVar": "--rule-strong",
+        "darkValue": "#3a4b64",
+        "oklch": "oklch(72.6% 0.020 150.4)",
+        "tonalRamp": [
+          "oklch(15.0% 0.013 150.4)",
+          "oklch(26.4% 0.014 150.4)",
+          "oklch(37.9% 0.016 150.4)",
+          "oklch(49.3% 0.017 150.4)",
+          "oklch(60.7% 0.018 150.4)",
+          "oklch(72.1% 0.020 150.4)",
+          "oklch(83.6% 0.018 150.4)",
+          "oklch(95.0% 0.017 150.4)"
+        ]
+      },
+      "chart-blue-rail": {
+        "role": "primary",
+        "displayName": "圖藍側欄 Chart-Blue Rail",
+        "canonical": "#1b4f8f",
+        "cssVar": "--rail",
+        "darkValue": "#12335e",
+        "oklch": "oklch(42.9% 0.119 255.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.099 255.7)",
+          "oklch(26.4% 0.107 255.7)",
+          "oklch(37.9% 0.115 255.7)",
+          "oklch(49.3% 0.115 255.7)",
+          "oklch(60.7% 0.106 255.7)",
+          "oklch(72.1% 0.098 255.7)",
+          "oklch(83.6% 0.090 255.7)",
+          "oklch(95.0% 0.082 255.7)"
+        ]
+      },
+      "chart-blue-deep": {
+        "role": "primary",
+        "displayName": "深圖藍 Chart-Blue Deep",
+        "canonical": "#143d70",
+        "cssVar": "--rail-deep",
+        "darkValue": "#0c264a",
+        "oklch": "oklch(36.1% 0.099 255.8)",
+        "tonalRamp": [
+          "oklch(15.0% 0.086 255.8)",
+          "oklch(26.4% 0.093 255.8)",
+          "oklch(37.9% 0.098 255.8)",
+          "oklch(49.3% 0.091 255.8)",
+          "oklch(60.7% 0.084 255.8)",
+          "oklch(72.1% 0.078 255.8)",
+          "oklch(83.6% 0.071 255.8)",
+          "oklch(95.0% 0.064 255.8)"
+        ]
+      },
+      "rail-ink": {
+        "role": "primary",
+        "displayName": "側欄墨 Rail Ink",
+        "canonical": "#eef3fa",
+        "cssVar": "--rail-ink",
+        "darkValue": "#e6eef8",
+        "oklch": "oklch(96.2% 0.011 256.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.006 256.7)",
+          "oklch(26.4% 0.006 256.7)",
+          "oklch(37.9% 0.007 256.7)",
+          "oklch(49.3% 0.008 256.7)",
+          "oklch(60.7% 0.009 256.7)",
+          "oklch(72.1% 0.009 256.7)",
+          "oklch(83.6% 0.010 256.7)",
+          "oklch(95.0% 0.011 256.7)"
+        ]
+      },
+      "rail-ink-secondary": {
+        "role": "primary",
+        "displayName": "側欄次要墨 Rail Ink Secondary",
+        "canonical": "#c3d3e8",
+        "cssVar": "--rail-ink-2",
+        "darkValue": "#a9bedb",
+        "oklch": "oklch(86.1% 0.034 255.2)",
+        "tonalRamp": [
+          "oklch(15.0% 0.019 255.2)",
+          "oklch(26.4% 0.022 255.2)",
+          "oklch(37.9% 0.024 255.2)",
+          "oklch(49.3% 0.026 255.2)",
+          "oklch(60.7% 0.029 255.2)",
+          "oklch(72.1% 0.031 255.2)",
+          "oklch(83.6% 0.033 255.2)",
+          "oklch(95.0% 0.032 255.2)"
+        ]
+      },
+      "rail-rule": {
+        "role": "primary",
+        "displayName": "側欄分隔線 Rail Rule",
+        "canonical": "rgba(238, 243, 250, .22)",
+        "cssVar": "--rail-rule",
+        "darkValue": "rgba(230, 238, 248, .16)",
+        "oklch": "oklch(96.2% 0.011 256.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.006 256.7)",
+          "oklch(26.4% 0.006 256.7)",
+          "oklch(37.9% 0.007 256.7)",
+          "oklch(49.3% 0.008 256.7)",
+          "oklch(60.7% 0.009 256.7)",
+          "oklch(72.1% 0.009 256.7)",
+          "oklch(83.6% 0.010 256.7)",
+          "oklch(95.0% 0.011 256.7)"
+        ]
+      },
+      "aeronautical-magenta": {
+        "role": "secondary",
+        "displayName": "航空洋紅 Aeronautical Magenta",
+        "canonical": "#a3166f",
+        "cssVar": "--rocket",
+        "darkValue": "#f06cc0",
+        "oklch": "oklch(48.2% 0.188 348.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.151 348.7)",
+          "oklch(26.4% 0.164 348.7)",
+          "oklch(37.9% 0.177 348.7)",
+          "oklch(49.3% 0.187 348.7)",
+          "oklch(60.7% 0.174 348.7)",
+          "oklch(72.1% 0.161 348.7)",
+          "oklch(83.6% 0.148 348.7)",
+          "oklch(95.0% 0.135 348.7)"
+        ]
+      },
+      "aeronautical-magenta-soft": {
+        "role": "secondary",
+        "displayName": "淡航空洋紅 Magenta Soft",
+        "canonical": "rgba(163, 22, 111, .12)",
+        "cssVar": "--rocket-soft",
+        "darkValue": "rgba(240, 108, 192, .16)",
+        "oklch": "oklch(48.2% 0.188 348.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.151 348.7)",
+          "oklch(26.4% 0.164 348.7)",
+          "oklch(37.9% 0.177 348.7)",
+          "oklch(49.3% 0.187 348.7)",
+          "oklch(60.7% 0.174 348.7)",
+          "oklch(72.1% 0.161 348.7)",
+          "oklch(83.6% 0.148 348.7)",
+          "oklch(95.0% 0.135 348.7)"
+        ]
+      },
+      "live-green": {
+        "role": "status",
+        "displayName": "接收綠 Live Green",
+        "canonical": "#1d7444",
+        "cssVar": "--live",
+        "darkValue": "#5fd08f",
+        "oklch": "oklch(49.6% 0.111 154.2)",
+        "tonalRamp": [
+          "oklch(15.0% 0.088 154.2)",
+          "oklch(26.4% 0.096 154.2)",
+          "oklch(37.9% 0.103 154.2)",
+          "oklch(49.3% 0.111 154.2)",
+          "oklch(60.7% 0.104 154.2)",
+          "oklch(72.1% 0.096 154.2)",
+          "oklch(83.6% 0.089 154.2)",
+          "oklch(95.0% 0.081 154.2)"
+        ]
+      },
+      "live-on-rail": {
+        "role": "status",
+        "displayName": "側欄接收綠 Live on Rail",
+        "canonical": "#7ee0a6",
+        "cssVar": "--live-on-rail",
+        "darkValue": "#7ee0a6",
+        "oklch": "oklch(83.1% 0.125 156.4)",
+        "tonalRamp": [
+          "oklch(15.0% 0.074 156.4)",
+          "oklch(26.4% 0.082 156.4)",
+          "oklch(37.9% 0.091 156.4)",
+          "oklch(49.3% 0.099 156.4)",
+          "oklch(60.7% 0.108 156.4)",
+          "oklch(72.1% 0.117 156.4)",
+          "oklch(83.6% 0.124 156.4)",
+          "oklch(95.0% 0.116 156.4)"
+        ]
+      },
+      "caution-amber": {
+        "role": "status",
+        "displayName": "警示琥珀 Caution Amber",
+        "canonical": "#8f5200",
+        "cssVar": "--warn",
+        "darkValue": "#f0b252",
+        "oklch": "oklch(49.9% 0.114 63.3)",
+        "tonalRamp": [
+          "oklch(15.0% 0.090 63.3)",
+          "oklch(26.4% 0.098 63.3)",
+          "oklch(37.9% 0.105 63.3)",
+          "oklch(49.3% 0.113 63.3)",
+          "oklch(60.7% 0.106 63.3)",
+          "oklch(72.1% 0.098 63.3)",
+          "oklch(83.6% 0.091 63.3)",
+          "oklch(95.0% 0.083 63.3)"
+        ]
+      },
+      "caution-amber-soft": {
+        "role": "status",
+        "displayName": "淡警示琥珀 Caution Soft",
+        "canonical": "rgba(143, 82, 0, .1)",
+        "cssVar": "--warn-soft",
+        "darkValue": "rgba(240, 178, 82, .12)",
+        "oklch": "oklch(49.9% 0.114 63.3)",
+        "tonalRamp": [
+          "oklch(15.0% 0.090 63.3)",
+          "oklch(26.4% 0.098 63.3)",
+          "oklch(37.9% 0.105 63.3)",
+          "oklch(49.3% 0.113 63.3)",
+          "oklch(60.7% 0.106 63.3)",
+          "oklch(72.1% 0.098 63.3)",
+          "oklch(83.6% 0.091 63.3)",
+          "oklch(95.0% 0.083 63.3)"
+        ]
+      },
+      "danger-red": {
+        "role": "status",
+        "displayName": "危險紅 Danger Red",
+        "canonical": "#b3261e",
+        "cssVar": "--danger",
+        "darkValue": "#ff7b6e",
+        "oklch": "oklch(50.1% 0.178 28.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.141 28.7)",
+          "oklch(26.4% 0.153 28.7)",
+          "oklch(37.9% 0.165 28.7)",
+          "oklch(49.3% 0.177 28.7)",
+          "oklch(60.7% 0.167 28.7)",
+          "oklch(72.1% 0.155 28.7)",
+          "oklch(83.6% 0.143 28.7)",
+          "oklch(95.0% 0.130 28.7)"
+        ]
+      },
+      "danger-red-soft": {
+        "role": "status",
+        "displayName": "淡危險紅 Danger Soft",
+        "canonical": "rgba(179, 38, 30, .09)",
+        "cssVar": "--danger-soft",
+        "darkValue": "rgba(255, 123, 110, .12)",
+        "oklch": "oklch(50.1% 0.178 28.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.141 28.7)",
+          "oklch(26.4% 0.153 28.7)",
+          "oklch(37.9% 0.165 28.7)",
+          "oklch(49.3% 0.177 28.7)",
+          "oklch(60.7% 0.167 28.7)",
+          "oklch(72.1% 0.155 28.7)",
+          "oklch(83.6% 0.143 28.7)",
+          "oklch(95.0% 0.130 28.7)"
+        ]
+      },
+      "tint-lowland": {
+        "role": "tertiary",
+        "displayName": "低地綠 Tint 0",
+        "canonical": "#cfe0bb",
+        "cssVar": "--t0",
+        "darkValue": "#2c4a37",
+        "oklch": "oklch(88.4% 0.053 127.6)",
+        "tonalRamp": [
+          "oklch(15.0% 0.030 127.6)",
+          "oklch(26.4% 0.033 127.6)",
+          "oklch(37.9% 0.037 127.6)",
+          "oklch(49.3% 0.040 127.6)",
+          "oklch(60.7% 0.044 127.6)",
+          "oklch(72.1% 0.048 127.6)",
+          "oklch(83.6% 0.051 127.6)",
+          "oklch(95.0% 0.051 127.6)"
+        ],
+        "projectScale": [
+          "var(--t0)",
+          "var(--t1)",
+          "var(--t2)",
+          "var(--t3)",
+          "var(--t4)",
+          "var(--t5)"
+        ]
+      },
+      "tint-plain": {
+        "role": "tertiary",
+        "displayName": "平原黃綠 Tint 1",
+        "canonical": "#e2e6a8",
+        "cssVar": "--t1",
+        "darkValue": "#4a5a33",
+        "oklch": "oklch(90.7% 0.080 111.0)",
+        "tonalRamp": [
+          "oklch(15.0% 0.044 111.0)",
+          "oklch(26.4% 0.049 111.0)",
+          "oklch(37.9% 0.055 111.0)",
+          "oklch(49.3% 0.060 111.0)",
+          "oklch(60.7% 0.066 111.0)",
+          "oklch(72.1% 0.071 111.0)",
+          "oklch(83.6% 0.077 111.0)",
+          "oklch(95.0% 0.078 111.0)"
+        ]
+      },
+      "tint-upland": {
+        "role": "tertiary",
+        "displayName": "台地黃 Tint 2",
+        "canonical": "#ecd391",
+        "cssVar": "--t2",
+        "darkValue": "#6a5a2f",
+        "oklch": "oklch(87.3% 0.089 89.6)",
+        "tonalRamp": [
+          "oklch(15.0% 0.050 89.6)",
+          "oklch(26.4% 0.056 89.6)",
+          "oklch(37.9% 0.062 89.6)",
+          "oklch(49.3% 0.068 89.6)",
+          "oklch(60.7% 0.074 89.6)",
+          "oklch(72.1% 0.081 89.6)",
+          "oklch(83.6% 0.087 89.6)",
+          "oklch(95.0% 0.084 89.6)"
+        ]
+      },
+      "tint-hill": {
+        "role": "tertiary",
+        "displayName": "丘陵黃褐 Tint 3",
+        "canonical": "#e2b27c",
+        "cssVar": "--t3",
+        "darkValue": "#74492c",
+        "oklch": "oklch(79.5% 0.090 69.2)",
+        "tonalRamp": [
+          "oklch(15.0% 0.055 69.2)",
+          "oklch(26.4% 0.061 69.2)",
+          "oklch(37.9% 0.067 69.2)",
+          "oklch(49.3% 0.073 69.2)",
+          "oklch(60.7% 0.080 69.2)",
+          "oklch(72.1% 0.086 69.2)",
+          "oklch(83.6% 0.088 69.2)",
+          "oklch(95.0% 0.081 69.2)"
+        ]
+      },
+      "tint-ridge": {
+        "role": "tertiary",
+        "displayName": "山脊褐 Tint 4",
+        "canonical": "#cd916c",
+        "cssVar": "--t4",
+        "darkValue": "#6e3a2d",
+        "oklch": "oklch(70.7% 0.089 52.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.059 52.5)",
+          "oklch(26.4% 0.065 52.5)",
+          "oklch(37.9% 0.071 52.5)",
+          "oklch(49.3% 0.078 52.5)",
+          "oklch(60.7% 0.084 52.5)",
+          "oklch(72.1% 0.088 52.5)",
+          "oklch(83.6% 0.082 52.5)",
+          "oklch(95.0% 0.076 52.5)"
+        ]
+      },
+      "tint-summit": {
+        "role": "tertiary",
+        "displayName": "峰頂紅褐 Tint 5",
+        "canonical": "#b47566",
+        "cssVar": "--t5",
+        "darkValue": "#5e2f33",
+        "oklch": "oklch(62.5% 0.083 34.0)",
+        "tonalRamp": [
+          "oklch(15.0% 0.060 34.0)",
+          "oklch(26.4% 0.065 34.0)",
+          "oklch(37.9% 0.071 34.0)",
+          "oklch(49.3% 0.077 34.0)",
+          "oklch(60.7% 0.082 34.0)",
+          "oklch(72.1% 0.078 34.0)",
+          "oklch(83.6% 0.073 34.0)",
+          "oklch(95.0% 0.067 34.0)"
+        ]
+      }
+    },
+    "themes": {
+      "light": ":root",
+      "dark": ":root[data-theme=\"dark\"]",
+      "switch": "src-ui/src/lib/theme.ts（localStorage rocket-ground-station.theme.v1、?theme=、prefers-color-scheme）"
+    },
+    "tintOpacity": {
+      "light": ".42",
+      "dark": ".55",
+      "purpose": "剖面圖背後色帶的疊印不透明度（--tint-opacity）。"
+    },
+    "mapFilter": {
+      "light": "grayscale(1) sepia(.18) hue-rotate(55deg) saturate(.55) contrast(.9) brightness(1.04)",
+      "dark": "grayscale(1) invert(1) sepia(.2) hue-rotate(170deg) saturate(.6) brightness(.78) contrast(.92)",
+      "blend": {
+        "light": "multiply",
+        "dark": "screen"
+      },
+      "purpose": "OSM 圖磚去色並融入圖紙（--map-filter）。"
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "只用於主高度讀數。"
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "側欄目前場次名稱；對話框標題同級（22px）。"
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "各面板中文標題。"
+      },
+      "reading": {
+        "displayName": "Reading",
+        "purpose": "次要讀數、趨勢數值、姿態角度。"
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "全域預設文字，tabular-nums。"
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "欄位名稱、單位、說明、狀態列。"
+      },
+      "identifier": {
+        "displayName": "Identifier",
+        "purpose": "SAFE / DEPLOYED / FORCE RELEASE 等協定與安全識別字。"
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-pop",
+        "value": "0 6px 18px rgba(15, 27, 45, .14)",
+        "darkValue": "0 8px 22px rgba(0, 0, 0, .45)",
+        "purpose": "浮在地圖上的標籤、工具、距離列與縮放控制。"
+      },
+      {
+        "name": "modal",
+        "value": "0 24px 60px rgba(15, 27, 45, .28)",
+        "purpose": "測試場次對話框；背幕 rgba(15, 27, 45, .55)。"
+      },
+      {
+        "name": "marker",
+        "value": "0 2px 8px rgba(15, 27, 45, .35)",
+        "purpose": "地圖火箭圓點標記。"
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "所有狀態過渡的預設緩動（--ease-out）。"
+      },
+      {
+        "name": "state",
+        "value": "160ms",
+        "purpose": "按鈕顏色、展開箭頭旋轉。"
+      },
+      {
+        "name": "pin-travel",
+        "value": "500ms",
+        "purpose": "高度階梯洋紅指針隨高度移動。"
+      },
+      {
+        "name": "attitude",
+        "value": "160ms linear",
+        "purpose": "姿態圖火箭模型旋轉。"
+      },
+      {
+        "name": "spinner",
+        "value": ".6s linear infinite",
+        "purpose": "結束中載入指示。"
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce → .01ms",
+        "purpose": "全域關閉動畫與過渡。"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "table-two-col",
+        "value": "1360px"
+      },
+      {
+        "name": "stack-readout",
+        "value": "1180px"
+      },
+      {
+        "name": "single-column",
+        "value": "900px"
+      },
+      {
+        "name": "narrow",
+        "value": "560px"
+      },
+      {
+        "name": "short-viewport",
+        "value": "max-height: 820px"
+      }
+    ],
+    "fonts": {
+      "numerals": "Barlow 400/500/600/700 latin via @fontsource/barlow (src-ui/src/main.ts)",
+      "chinese": "Microsoft JhengHei UI (system)"
+    }
+  },
+  "components": [
+    {
+      "name": "開始監控（側欄主按鈕）",
+      "kind": "button",
+      "refersTo": "button-connect",
+      "description": "側欄上唯一的實心主動作；監控中轉為描邊的「停止監控」。",
+      "html": "<div class=\"ds-rail-demo\"><button class=\"ds-btn-connect\">開始監控</button><button class=\"ds-btn-connect ds-is-connected\">停止監控</button></div>",
+      "css": ".ds-rail-demo{display:grid;gap:12px;padding:20px;background:var(--rail,#1b4f8f);} .ds-btn-connect{display:flex;align-items:center;justify-content:center;min-height:46px;border:0;border-radius:var(--radius-lg,6px);background:var(--rail-ink,#eef3fa);color:var(--rail,#1b4f8f);font:700 15px/1 \"Microsoft JhengHei UI\",\"Microsoft JhengHei\",sans-serif;cursor:pointer;transition:background-color 160ms cubic-bezier(.16,1,.3,1),color 160ms cubic-bezier(.16,1,.3,1);} .ds-btn-connect:hover{background:#ffffff;} .ds-btn-connect:focus-visible{outline:2px solid var(--rail-ink-2,#c3d3e8);outline-offset:2px;} .ds-btn-connect.ds-is-connected{border:1.5px solid var(--rail-ink,#eef3fa);background:transparent;color:var(--rail-ink,#eef3fa);} .ds-btn-connect.ds-is-connected:hover{background:rgba(238,243,250,.1);}"
+    },
+    {
+      "name": "墨色按鈕",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "圖紙區上的實心次要動作，如「覆蓋倒數」與地圖工具的啟用狀態。",
+      "html": "<button class=\"ds-btn-ink\">覆蓋倒數</button>",
+      "css": ".ds-btn-ink{height:38px;padding:0 12px;border:0;border-radius:var(--radius,4px);background:var(--ink,#0f1b2d);color:var(--paper,#edf0ea);font:600 13.5px/1 \"Microsoft JhengHei UI\",\"Microsoft JhengHei\",sans-serif;cursor:pointer;transition:background-color 160ms cubic-bezier(.16,1,.3,1);} .ds-btn-ink:hover{background:var(--ink-2,#435168);} .ds-btn-ink:focus-visible{outline:2px solid var(--rail,#1b4f8f);outline-offset:2px;}"
+    },
+    {
+      "name": "對話框主按鈕",
+      "kind": "button",
+      "refersTo": "button-dialog-primary",
+      "description": "測試場次對話框的確認與取消。",
+      "html": "<div class=\"ds-dlg-foot\"><button class=\"ds-btn-cancel\">取消</button><button class=\"ds-btn-dialog\">開始記錄</button></div>",
+      "css": ".ds-dlg-foot{display:flex;justify-content:flex-end;gap:12px;padding:16px;border-top:1px solid var(--rule,#c6cec5);background:var(--sheet,#f6f8f4);} .ds-btn-dialog,.ds-btn-cancel{min-height:40px;padding:0 18px;border:0;border-radius:var(--radius,4px);font:700 14px \"Microsoft JhengHei UI\",\"Microsoft JhengHei\",sans-serif;cursor:pointer;} .ds-btn-dialog{background:var(--rail,#1b4f8f);color:var(--rail-ink,#eef3fa);} .ds-btn-dialog:hover{background:var(--rail-deep,#143d70);} .ds-btn-cancel{border:1px solid var(--rule-strong,#9eaaa0);background:transparent;color:var(--ink,#0f1b2d);} .ds-btn-cancel:hover{background:var(--paper,#edf0ea);} .ds-btn-dialog:focus-visible,.ds-btn-cancel:focus-visible{outline:2px solid var(--rail,#1b4f8f);outline-offset:2px;}"
+    },
+    {
+      "name": "兩段式釋放",
+      "kind": "custom",
+      "refersTo": "button-arm",
+      "description": "解除安全鎖（描邊）與 FORCE RELEASE（鎖定時斜紋、就緒時實心紅）。",
+      "html": "<div class=\"ds-release\"><button class=\"ds-arm\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><rect x=\"3\" y=\"7\" width=\"10\" height=\"7\" rx=\"1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><path d=\"M5 7V5a3 3 0 0 1 6 0v2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\"/></svg>解除安全鎖</button><button class=\"ds-fire\" disabled>FORCE RELEASE</button><button class=\"ds-fire ds-ready\">FORCE RELEASE</button></div>",
+      "css": ".ds-release{display:grid;grid-template-columns:1fr 1.25fr 1.25fr;gap:8px;padding:16px;background:var(--sheet,#f6f8f4);} .ds-arm,.ds-fire{min-height:50px;border-radius:var(--radius,4px);font:700 14.5px/1 \"Microsoft JhengHei UI\",\"Microsoft JhengHei\",sans-serif;cursor:pointer;} .ds-arm{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1.5px solid var(--danger,#b3261e);background:transparent;color:var(--danger,#b3261e);} .ds-arm:hover{background:var(--danger-soft,rgba(179,38,30,.09));} .ds-arm:focus-visible,.ds-fire:focus-visible{outline:2px solid var(--rail,#1b4f8f);outline-offset:2px;} .ds-fire{border:0;font-family:Barlow,sans-serif;letter-spacing:.05em;background:repeating-linear-gradient(-45deg,var(--paper-2,#e3e8e1) 0 8px,var(--rule,#c6cec5) 8px 16px);color:var(--ink-3,#5f6c80);} .ds-fire:disabled{cursor:not-allowed;} .ds-fire.ds-ready{background:var(--danger,#b3261e);color:#fff;} .ds-fire.ds-ready:hover{filter:brightness(1.08);}"
+    },
+    {
+      "name": "SAFE / DEPLOYED 徽章",
+      "kind": "chip",
+      "refersTo": "badge-safe",
+      "description": "展開機構狀態；描邊綠色 SAFE、實心紅色 DEPLOYED，附線條圖示。",
+      "html": "<div class=\"ds-badges\"><span class=\"ds-deploy\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 14 14\" aria-hidden=\"true\"><path d=\"M7 1 12 3v4c0 3-2.5 5-5 6-2.5-1-5-3-5-6V3Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></svg>SAFE</span><span class=\"ds-deploy ds-deployed\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 14 14\" aria-hidden=\"true\"><path d=\"M7 1.5v6M3.2 4.2a5 5 0 1 0 7.6 0\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\"/></svg>DEPLOYED</span></div>",
+      "css": ".ds-badges{display:flex;gap:12px;padding:16px;background:var(--sheet,#f6f8f4);} .ds-deploy{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border:1.5px solid var(--live,#1d7444);border-radius:var(--radius,4px);color:var(--live,#1d7444);font:700 15px/1.2 Barlow,sans-serif;letter-spacing:.06em;} .ds-deploy.ds-deployed{border-color:var(--danger,#b3261e);background:var(--danger,#b3261e);color:#fff;}"
+    },
+    {
+      "name": "側欄輸入框",
+      "kind": "input",
+      "refersTo": "input-rail",
+      "description": "圖藍側欄上的序列埠與鮑率欄位。",
+      "html": "<div class=\"ds-rail-field\"><label for=\"ds-port\">序列埠</label><input id=\"ds-port\" class=\"ds-input-rail\" placeholder=\"例如 COM3\" value=\"COM3\"></div>",
+      "css": ".ds-rail-field{display:grid;gap:5px;padding:20px;background:var(--rail,#1b4f8f);} .ds-rail-field label{color:var(--rail-ink-2,#c3d3e8);font:400 12.5px/1.45 \"Microsoft JhengHei UI\",\"Microsoft JhengHei\",sans-serif;} .ds-input-rail{height:36px;padding:0 10px;border:1px solid var(--rail-rule,rgba(238,243,250,.22));border-radius:var(--radius,4px);background:var(--rail-deep,#143d70);color:var(--rail-ink,#eef3fa);font:500 14px Barlow,sans-serif;outline:none;} .ds-input-rail:focus{border-color:var(--rail-ink-2,#c3d3e8);} .ds-input-rail::placeholder{color:var(--rail-ink-2,#c3d3e8);opacity:.8;}"
+    },
+    {
+      "name": "對話框欄位",
+      "kind": "input",
+      "refersTo": "input-sheet",
+      "description": "圖頁上的文字與數字欄位，focus 時圖藍邊框加淡光環。",
+      "html": "<div class=\"ds-sheet-field\"><label for=\"ds-purpose\">測試目的 <span>*</span></label><input id=\"ds-purpose\" class=\"ds-input-sheet\" value=\"示範飛行：半雙工遙測與定時開傘\"></div>",
+      "css": ".ds-sheet-field{display:grid;gap:6px;padding:20px;background:var(--sheet,#f6f8f4);} .ds-sheet-field label{color:var(--ink-2,#435168);font:400 13px/1.45 \"Microsoft JhengHei UI\",\"Microsoft JhengHei\",sans-serif;} .ds-sheet-field label span{color:var(--danger,#b3261e);} .ds-input-sheet{padding:9px 11px;border:1px solid var(--rule-strong,#9eaaa0);border-radius:var(--radius,4px);background:var(--field,#fff);color:var(--ink,#0f1b2d);font:400 14px \"Microsoft JhengHei UI\",\"Microsoft JhengHei\",sans-serif;outline:none;} .ds-input-sheet:focus{border-color:var(--rail,#1b4f8f);box-shadow:0 0 0 3px color-mix(in srgb,var(--rail,#1b4f8f) 18%,transparent);}"
+    },
+    {
+      "name": "連線狀態區塊",
+      "kind": "card",
+      "refersTo": "link-block",
+      "description": "側欄中的凹陷區塊；狀態點以實心/虛線/空心區分。",
+      "html": "<div class=\"ds-rail-demo2\"><section class=\"ds-link\"><div class=\"ds-link-state\"><i></i><strong>接收中</strong></div><dl><dt>最後封包</dt><dd>0.2 s 前</dd><dt>接收頻率</dt><dd>1.67 Hz</dd><dt>遺失 / CRC</dt><dd>2 / 0</dd></dl></section></div>",
+      "css": ".ds-rail-demo2{padding:20px;background:var(--rail,#1b4f8f);color:var(--rail-ink,#eef3fa);font-family:\"Microsoft JhengHei UI\",\"Microsoft JhengHei\",sans-serif;} .ds-link{padding:14px 14px 12px;border-radius:var(--radius-lg,6px);background:var(--rail-deep,#143d70);} .ds-link-state{display:flex;align-items:center;gap:10px;} .ds-link-state strong{font-size:20px;font-weight:700;line-height:1.1;} .ds-link-state i{width:12px;height:12px;border:2px solid var(--live-on-rail,#7ee0a6);border-radius:50%;background:var(--live-on-rail,#7ee0a6);} .ds-link dl{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin:12px 0 0;font-size:13px;} .ds-link dt{color:var(--rail-ink-2,#c3d3e8);} .ds-link dd{margin:0;text-align:right;font-weight:600;font-family:Barlow,sans-serif;font-variant-numeric:tabular-nums;}"
+    },
+    {
+      "name": "高度色階",
+      "kind": "custom",
+      "refersTo": "tint-lowland",
+      "description": "六段地形分層色階加洋紅指針，旁為 Display 級高度讀數。",
+      "html": "<div class=\"ds-alt\"><div class=\"ds-ladder\"><span style=\"background:var(--t5,#b47566)\"></span><span style=\"background:var(--t4,#cd916c)\"></span><span style=\"background:var(--t3,#e2b27c)\"></span><span style=\"background:var(--t2,#ecd391)\"></span><span style=\"background:var(--t1,#e2e6a8)\"></span><span style=\"background:var(--t0,#cfe0bb)\"></span><i class=\"ds-pin\" style=\"bottom:70%\"></i></div><div><p class=\"ds-alt-label\">相對高度</p><p class=\"ds-alt-value\"><strong>635.1</strong><span>m</span></p></div></div>",
+      "css": ".ds-alt{display:grid;grid-template-columns:40px 1fr;gap:20px;padding:20px;background:var(--paper,#edf0ea);color:var(--ink,#0f1b2d);} .ds-ladder{position:relative;display:grid;grid-template-rows:repeat(6,1fr);min-height:150px;border:1px solid var(--rule-strong,#9eaaa0);border-radius:3px;} .ds-pin{position:absolute;left:-4px;right:-4px;height:3px;background:var(--rocket,#a3166f);transition:bottom 500ms cubic-bezier(.16,1,.3,1);} .ds-pin::after{content:\"\";position:absolute;right:-10px;top:-5.5px;border:7px solid transparent;border-left:8px solid var(--rocket,#a3166f);border-right:0;} .ds-alt-label{margin:0;color:var(--ink-2,#435168);font:500 15px \"Microsoft JhengHei UI\",\"Microsoft JhengHei\",sans-serif;} .ds-alt-value{display:flex;align-items:baseline;gap:10px;margin:8px 0 0;font-family:Barlow,sans-serif;font-variant-numeric:tabular-nums;} .ds-alt-value strong{font-size:96px;font-weight:600;line-height:.86;letter-spacing:-.035em;} .ds-alt-value span{color:var(--ink-2,#435168);font-size:24px;font-weight:600;}"
+    },
+    {
+      "name": "地圖浮貼標籤",
+      "kind": "card",
+      "refersTo": "map-overlay",
+      "description": "浮在地圖之上的標籤與工具；使用 --shadow-pop。",
+      "html": "<div class=\"ds-map-bg\"><div class=\"ds-tag\"><h2>GPS 位置</h2><p><span>定位有效</span> · 更新 17:39:10 · 軌跡 11 點</p></div></div>",
+      "css": ".ds-map-bg{padding:16px;background:var(--paper-2,#e3e8e1);} .ds-tag{display:inline-block;padding:8px 11px;border:1px solid var(--rule,#c6cec5);border-radius:var(--radius,4px);background:var(--sheet,#f6f8f4);box-shadow:var(--shadow-pop,0 6px 18px rgba(15,27,45,.14));font-family:\"Microsoft JhengHei UI\",\"Microsoft JhengHei\",sans-serif;} .ds-tag h2{margin:0;font-size:15px;font-weight:700;line-height:1.2;color:var(--ink,#0f1b2d);} .ds-tag p{margin:3px 0 0;color:var(--ink-2,#435168);font-size:12px;} .ds-tag p span{color:var(--live,#1d7444);font-weight:600;}"
+    },
+    {
+      "name": "底部狀態列",
+      "kind": "nav",
+      "refersTo": "status-bar",
+      "description": "安靜的診斷列；連線點與數值，異常時才轉色。",
+      "html": "<div class=\"ds-status\"><span class=\"ds-item ds-live\"><i></i>接收中</span><span class=\"ds-item\">封包 <b>40</b></span><span class=\"ds-item\">CRC 錯誤 <b>0</b></span><span class=\"ds-item ds-warn\">遺失 <b>2</b></span><span class=\"ds-item\">頻率 <b>1.67 Hz</b></span></div>",
+      "css": ".ds-status{display:flex;align-items:center;gap:20px;min-height:34px;padding:0 20px;border-top:1px solid var(--rule,#c6cec5);background:var(--paper-2,#e3e8e1);color:var(--ink-2,#435168);font:400 12.5px \"Microsoft JhengHei UI\",\"Microsoft JhengHei\",sans-serif;white-space:nowrap;} .ds-item{display:inline-flex;align-items:baseline;gap:6px;} .ds-item b{color:var(--ink,#0f1b2d);font:600 13.5px Barlow,sans-serif;font-variant-numeric:tabular-nums;} .ds-warn b{color:var(--warn,#8f5200);} .ds-live{align-items:center;color:var(--ink,#0f1b2d);font-weight:600;} .ds-live i{width:9px;height:9px;border:1.5px solid var(--live,#1d7444);border-radius:50%;background:var(--live,#1d7444);}"
+    }
+  ],
+  "narrative": {
+    "northStar": "航空圖色階（The Sectional Chart）",
+    "overview": "整個畫面像一張航空區域圖（sectional chart）那樣被閱讀：冷灰綠的圖紙底、海軍藍墨色、左緣一條實心的圖藍色側欄，資料區之間用髮絲線分隔而不是卡片。畫面上唯一響亮的墨色是火箭本身：高度曲線、地圖上的火箭標記與航跡、現在值標籤、姿態圖中的尾翼，全部是航空洋紅。高度用地形分層設色（綠、黃、黃褐、褐）表達，同一組色帶同時出現在高度階梯與高度剖面圖後方，洋紅指針隨高度移動。\n\n密度是儀器級的：一個 1200×800 視窗內同時容納連線狀態、主高度讀數、剖面圖、姿態、13 欄遙測表、地圖與飛行控制，但只有少數數字是大的，診斷資訊安靜地退到底部狀態列。夜間版本以深海軍藍為底，角色完全相同、只換明度，兩者都要在戶外強光與暗處長時間可讀。\n\n這個系統明確拒絕的，是類別預設的深色玻璃儀表板：統一的圓角卡片、英文 eyebrow 小標、青色光暈、等寬字型扮裝、膠囊形標籤與毛玻璃。",
+    "keyCharacteristics": [
+      "圖紙底 + 海軍藍墨色 + 圖藍色左側欄，三者構成全部的面。",
+      "髮絲線（1px `hairline`）劃分區域；卡片不存在。",
+      "航空洋紅只屬於火箭。",
+      "六段地形分層色階是高度的唯一尺度，色階與剖面圖共用。",
+      "所有數字用 Barlow 等寬數字（tabular-nums），中文用微軟正黑體。",
+      "狀態永遠是「文字 + 形狀 + 顏色」三者並陳。"
+    ],
+    "rules": [
+      {
+        "name": "The Rocket-Only Magenta Rule",
+        "body": "航空洋紅只畫火箭本身與它的資料（曲線、標記、航跡、指針、現在值、最高值）。任何介面控制、狀態或裝飾都不得使用 `--rocket`。",
+        "section": "colors"
+      },
+      {
+        "name": "The Rail Owns the Left Edge Rule",
+        "body": "圖藍色只以整面側欄的形式存在於左緣；中央與右欄不出現圖藍色塊，唯一例外是對話框主按鈕與焦點框。",
+        "section": "colors"
+      },
+      {
+        "name": "The Six Band Rule",
+        "body": "高度尺度永遠是六段色帶，上限由 `niceAltitudeCeiling` 取能被 6 整除的整數（如 60、180、900），讓每一條色帶邊界都是整數。高度階梯與剖面圖共用同一組 `--t0`…`--t5` 與同一個上限。",
+        "section": "colors"
+      },
+      {
+        "name": "The Barlow Numerals Rule",
+        "body": "每一個數字（讀數、刻度、封包數、COM 埠、場次 ID）都套 `.num` 或 `--font-num`；中文標籤一律用 `--font-zh`。不使用任何等寬字型。",
+        "section": "typography"
+      },
+      {
+        "name": "The Chinese Label Rule",
+        "body": "面板標題與欄位名稱是中文、句中大小寫；英文只出現在協定識別字（COM、CRC、SET_TIMER、FORCE RELEASE、RUN ID）。",
+        "section": "typography"
+      },
+      {
+        "name": "The Hairline-Not-Card Rule",
+        "body": "區域之間用 1px `--rule` 線分隔，面板沒有自己的底色框、圓角或陰影。只有語意上「凹陷」的元件（計時器槽、側欄連線區塊）才有面。",
+        "section": "layout"
+      },
+      {
+        "name": "The Float-Over-Map Rule",
+        "body": "只有疊在地圖或整個畫面之上的元素可以有陰影；固定在殼層格線中的面板永遠是平的。",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** 所有顏色都透過 `app.css` 的角色變數取用，並同時檢查日間與 `data-theme=\"dark\"` 兩種值。",
+      "**Do** 用 1px `--rule` 髮絲線劃分新區域，讓區域直接坐在圖紙上。",
+      "**Do** 每個數字套 `.num`（Barlow、tabular-nums），單位用 `--ink-3` 小一級跟在後面。",
+      "**Do** 狀態同時用文字、形狀（實心/空心/虛線圈、箭頭、斜紋）與顏色表達。",
+      "**Do** 任何新的高度視覺都沿用六段 `--t0`…`--t5` 色帶與能被 6 整除的上限。",
+      "**Do** 危險動作維持兩段式：先解鎖（描邊），再發射（實心紅）。",
+      "**Do** 圖示用內嵌線條 SVG（1.6–1.8px，`currentColor`）。"
+    ],
+    "donts": [
+      "**Don't** 把 `--rocket` 洋紅用在任何不是火箭或火箭資料的東西上。",
+      "**Don't** 做統一圓角卡片、毛玻璃、青色光暈或深色玻璃儀表板。",
+      "**Don't** 使用膠囊形（全圓角）標籤或按鈕；圓角上限是 6px。",
+      "**Don't** 加英文 eyebrow 小標或面板上方的大寫 kicker；面板標題就是中文標題。",
+      "**Don't** 用等寬字型扮演「科技感」。",
+      "**Don't** 給殼層格線內的面板加陰影；陰影只屬於浮在地圖或畫面之上的元素。",
+      "**Don't** 在中央或右欄放大面積的圖藍色塊。"
+    ]
+  }
+}

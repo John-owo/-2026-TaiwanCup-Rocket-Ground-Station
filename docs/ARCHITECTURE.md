@@ -131,32 +131,32 @@ Telemetry / Event
 
 ### Application shell
 
-`src-ui/src/App.svelte` 使用桌面三欄 layout：
+`src-ui/src/App.svelte` 使用桌面三欄 layout（視覺規則見 [`DESIGN.md`](../DESIGN.md)）：
 
-- 頂部列：隊徽、場次 identity、storage／run／connection chip。
-- 左側欄：`ConnectionPanel`，負責 COM、Baud、姿態軸向與開始／停止監控。
-- 中央：`TelemetryGrid`、`TelemetryCharts`、`AttitudeIndicator`。
+- 左側欄：`ConnectionPanel`，航圖藍底，負責場次 identity、連線四態、儲存狀態、開始／停止監控、COM、Baud、姿態軸向與日間／夜間配色。
+- 中央：`TelemetryGrid`（相對高度與高度色階尺）、`TelemetryCharts`（高度剖面），下方一列為 `AttitudeIndicator` 與 `TelemetryTable`。
 - 右側欄：`GpsMap` 與 `FlightControlPanel`。
-- 底部：`StatusBar`，顯示 link 四態與統計。
+- 底部：`StatusBar`，橫跨中央與右側，顯示 link 四態與通訊統計。
 
-低高度 desktop viewport 由主內容捲動；窄視窗改為單欄堆疊，避免遙測卡片、GPS 或飛控按鈕被裁切。
+視窗較矮時只有中央區塊捲動；窄於 900px 改為單欄堆疊，避免遙測、GPS 或飛控按鈕被裁切。
 
 ### Components
 
 | 元件 | 職責 |
 |------|------|
-| `ConnectionPanel.svelte` | 掃描／選擇 COM 與 Baud、保存姿態軸向、請求開始／停止場次 |
+| `ConnectionPanel.svelte` | 左側欄：場次 identity、連線四態、儲存狀態、掃描／選擇 COM 與 Baud、保存姿態軸向、切換配色、請求開始／停止場次 |
 | `TestSessionDialog.svelte` | 強制蒐集測試目的、操作者、地點、起始電壓與備註；儲存失敗時要求明確承認僅監控 |
-| `TelemetryGrid.svelte` | 顯示 13 項已還原的 IMU、GPS／導航與環境數值 |
-| `TelemetryCharts.svelte` | 以 SVG 顯示最近高度、垂直速度、地速、氣壓與溫度資料 |
+| `TelemetryGrid.svelte` | 相對高度大字與高度色階尺、垂直速度、本場最高、空中端時間，以及總加速度、地速、氣壓、溫度 |
+| `TelemetryCharts.svelte` | 以 SVG 依空中端 uptime 繪製目前空中 session 的高度剖面，背景為地形色帶 |
+| `TelemetryTable.svelte` | 全部 13 項遙測與倒數剩餘，超過門檻時以顏色加文字標示 |
 | `AttitudeIndicator.svelte` | 顯示 Roll／Pitch／相對 Yaw 與三軸角速度；每個 telemetry revision 只更新一次 |
-| `GpsMap.svelte` | 驗證 GPS 座標、更新 Leaflet marker、維護最多 5,000 點軌跡 |
+| `GpsMap.svelte` | 驗證 GPS 座標、更新 Leaflet marker、維護最多 5,000 點軌跡，計算距發射點與方位 |
 | `FlightControlPanel.svelte` | 顯示 timer／session／deploy 狀態，管理安全鎖、timer 與 FORCE 操作 |
 | `StatusBar.svelte` | 顯示待命／等待／接收／失聯、解析失敗、CRC、頻率與執行時間 |
 
 ### Stores and bridge
 
-`src-ui/src/lib/tauri.ts` 集中包裝 Tauri `invoke`／`listen`；`stores.svelte.ts` 保存遙測快照、每包 revision、圖表 ring buffer、link／storage／session／command／flight stats。純邏輯測試則放在 `src-ui/src/lib/*.test.mjs`，讓姿態、GPS、session、command queue 與 UI copy 不必依賴原生視窗即可驗證。
+`src-ui/src/lib/tauri.ts` 集中包裝 Tauri `invoke`／`listen`；不在 Tauri 殼內時（瀏覽器預覽）改接 `demo.ts` 的模擬飛行，正式 App 不會使用。`theme.ts` 管理日間／夜間配色，`flight-display.js` 是色階尺、方位與剖面的純計算；`stores.svelte.ts` 保存遙測快照、每包 revision、圖表 ring buffer、link／storage／session／command／flight stats。純邏輯測試則放在 `src-ui/src/lib/*.test.mjs`，讓姿態、GPS、session、command queue 與 UI copy 不必依賴原生視窗即可驗證。
 
 ## 5. Session lifecycle
 

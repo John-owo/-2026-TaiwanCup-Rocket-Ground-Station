@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, isTauri } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type {
   AirborneSessionChange,
@@ -13,6 +13,11 @@ import type {
   TestSessionStatus,
 } from './types';
 import type { store as StoreType } from './stores.svelte';
+import { demoApi, startDemo } from './demo';
+
+// Outside the Tauri shell (vite dev / preview) the UI runs on a labelled demo feed.
+const demo = !isTauri();
+let demoStorageStatus: StorageStatus | null = null;
 
 export async function startTestMonitoring(
   path: string,
@@ -20,6 +25,7 @@ export async function startTestMonitoring(
   metadata: FlightSessionMetadata,
   allowUnrecorded: boolean,
 ): Promise<TestSessionStatus> {
+  if (demo) return demoApi.startTestMonitoring(path, baudRate, metadata);
   return await invoke<TestSessionStatus>('start_test_monitoring', {
     path,
     baudRate,
@@ -29,18 +35,22 @@ export async function startTestMonitoring(
 }
 
 export async function listSerialPorts(): Promise<string[]> {
+  if (demo) return demoApi.listSerialPorts();
   return await invoke<string[]>('list_serial_ports');
 }
 
 export async function stopTestMonitoring(): Promise<TestSessionStatus> {
+  if (demo) return demoApi.stopTestMonitoring();
   return await invoke<TestSessionStatus>('stop_test_monitoring');
 }
 
 export async function getTestSessionStatus(): Promise<TestSessionStatus> {
+  if (demo) return demoApi.getTestSessionStatus();
   return await invoke<TestSessionStatus>('get_test_session_status');
 }
 
 export async function getStorageStatus(): Promise<StorageStatus> {
+  if (demo && demoStorageStatus) return demoStorageStatus;
   return await invoke<StorageStatus>('get_storage_status');
 }
 
@@ -55,10 +65,12 @@ export async function getTelemetryHistory(
 }
 
 export async function setTimer(durationS: number): Promise<void> {
+  if (demo) return demoApi.setTimer(durationS);
   await invoke('set_timer', { durationS });
 }
 
 export async function forceRelease(): Promise<void> {
+  if (demo) return demoApi.forceRelease();
   await invoke('force_release');
 }
 
@@ -69,6 +81,13 @@ export async function getFlightStats(): Promise<FlightStats> {
 export async function setupEventListeners(
   appStore: typeof StoreType
 ): Promise<UnlistenFn[]> {
+  if (demo) {
+    // Leave the caller's effect before the demo starts writing store state.
+    await Promise.resolve();
+    const stopDemo = startDemo(appStore);
+    demoStorageStatus = appStore.storageStatus;
+    return [stopDemo];
+  }
   const unlisteners: UnlistenFn[] = [];
 
   const unlistenTelemetry = await listen<TelemetryPayload>('update-telemetry', (event) => {

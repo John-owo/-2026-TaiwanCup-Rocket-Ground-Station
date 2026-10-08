@@ -2,7 +2,8 @@
   import { onMount, untrack } from 'svelte';
   import * as L from 'leaflet';
   import { store } from '@/lib/stores.svelte';
-  import { appendTrackPoint, isValidGpsPosition } from '@/lib/gps-map.js';
+  import { appendTrackPoint, haversineDistanceMeters, isValidGpsPosition } from '@/lib/gps-map.js';
+  import { bearingDegrees, compassLabel, formatDistance } from '@/lib/flight-display.js';
 
   type GpsPosition = { lat: number; lng: number };
 
@@ -10,31 +11,52 @@
   let map: L.Map | undefined;
   let tileLayer: L.TileLayer | undefined;
   let marker: L.Marker | undefined;
+  let launchMarker: L.Marker | undefined;
   let trackLine: L.Polyline | undefined;
   let resizeObserver: ResizeObserver | undefined;
   let trackPoints: GpsPosition[] = [];
   let lastValidPosition = $state<GpsPosition | null>(null);
+  let launchPoint = $state<GpsPosition | null>(null);
+  let observedSessionId: number | null = null;
 
   let following = $state(true);
-  let positionStatus = $state('等待有效定位');
+  let fixValid = $state(false);
   let mapError = $state('');
   let lastFixTime = $state('--');
   let trackCount = $state(0);
 
+  let distance = $derived(
+    launchPoint && lastValidPosition ? haversineDistanceMeters(launchPoint, lastValidPosition) : null,
+  );
+  let bearing = $derived(
+    launchPoint && lastValidPosition && distance !== null && distance >= 1
+      ? bearingDegrees(launchPoint, lastValidPosition)
+      : null,
+  );
+
   const rocketIcon = L.divIcon({
     className: 'rocket-marker-shell',
-    html: '<div class="rocket-marker" aria-label="火箭位置">▲</div>',
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    html: '<div class="rocket-marker"></div>',
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
+
+  const launchIcon = L.divIcon({
+    className: 'rocket-marker-shell',
+    html: '<div class="launch-marker"></div>',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
   });
 
   onMount(() => {
-    map = L.map(mapContainer, { zoomControl: true }).setView([23.7, 121.0], 7);
+    map = L.map(mapContainer, { zoomControl: false, attributionControl: true }).setView([23.7, 121.0], 7);
+    L.control.zoom({ position: 'topright' }).addTo(map);
     tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors',
+      className: 'chart-tiles',
     }).addTo(map);
-    trackLine = L.polyline([], { color: '#73d2b6', weight: 3 }).addTo(map);
+    trackLine = L.polyline([], { color: getComputedStyle(document.documentElement).getPropertyValue('--rocket').trim() || '#a3166f', weight: 3 }).addTo(map);
 
     tileLayer.on('tileerror', handleTileError);
     tileLayer.on('load', handleTileLoad);
@@ -43,9 +65,16 @@
     resizeObserver = new ResizeObserver(() => map?.invalidateSize());
     resizeObserver.observe(mapContainer);
 
+    const themeObserver = new MutationObserver(() => {
+      const color = getComputedStyle(document.documentElement).getPropertyValue('--rocket').trim();
+      if (color) trackLine?.setStyle({ color });
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
     if (lastValidPosition) renderPosition(lastValidPosition, true);
 
     return () => {
+      themeObserver.disconnect();
       resizeObserver?.disconnect();
       tileLayer?.off('tileerror', handleTileError);
       tileLayer?.off('load', handleTileLoad);
@@ -54,6 +83,7 @@
       map = undefined;
       tileLayer = undefined;
       marker = undefined;
+      launchMarker = undefined;
       trackLine = undefined;
     };
   });
@@ -62,16 +92,27 @@
     const revision = store.telemetryRevision;
     if (revision === 0) return;
     const telemetry = untrack(() => store.telemetry);
+    if (observedSessionId !== telemetry.sessionId) {
+      // A new airborne session starts a new launch reference.
+      observedSessionId = telemetry.sessionId;
+      launchPoint = null;
+      launchMarker?.remove();
+      launchMarker = undefined;
+    }
     const position = { lat: telemetry.latitude, lng: telemetry.longitude };
     if (!isValidGpsPosition(position)) {
-      positionStatus = '等待有效定位';
+      fixValid = false;
       return;
     }
 
     const firstFix = untrack(() => lastValidPosition === null);
     lastValidPosition = position;
-    positionStatus = '定位有效';
+    fixValid = true;
     lastFixTime = new Date().toLocaleTimeString('zh-TW', { hour12: false });
+    if (untrack(() => launchPoint === null)) {
+      launchPoint = position;
+      if (map) launchMarker = L.marker(position, { icon: launchIcon, interactive: false }).addTo(map);
+    }
 
     const nextTrack = appendTrackPoint(trackPoints, position);
     if (nextTrack !== trackPoints) {
@@ -88,7 +129,7 @@
     else marker.setLatLng(position);
 
     if (following) {
-      map.setView(position, firstFix ? 16 : map.getZoom(), { animate: false });
+      map.setView(position, firstFix ? 17 : map.getZoom(), { animate: false });
     }
   }
 
@@ -114,7 +155,7 @@
   }
 
   function handleTileError() {
-    mapError = '地圖載入失敗，GPS 數值仍持續更新';
+    mapError = '地圖圖磚載入失敗（可能沒有網路），位置數值仍持續更新';
   }
 
   function handleTileLoad() {
@@ -122,112 +163,137 @@
   }
 </script>
 
-<article class="gps-card">
-  <div class="card-header">
-    <div>
-      <span class="eyebrow">POSITION TRACKING</span>
-      <span class="header-label">GPS 即時位置</span>
-      <span class="status" class:valid={positionStatus === '定位有效'}>{positionStatus}</span>
+<section class="gps" aria-label="GPS 位置">
+  <div class="map" bind:this={mapContainer}></div>
+
+  <div class="tag">
+    <h2>GPS 位置</h2>
+    <p>
+      <span class:valid={fixValid}>{fixValid ? '定位有效' : '等待有效定位'}</span>
+      · 更新 <span class="num">{lastFixTime}</span> · 軌跡 <span class="num">{trackCount}</span> 點
+    </p>
+  </div>
+
+  {#if mapError}
+    <p class="map-error" role="status">{mapError}</p>
+  {/if}
+
+  <div class="dock">
+    <div class="tools">
+      <button class:active={following} onclick={toggleFollowing} aria-pressed={following}>自動跟隨</button>
+      <button onclick={locateRocket} disabled={!lastValidPosition}>定位火箭</button>
+      <button onclick={clearTrack} disabled={trackCount === 0}>清除軌跡</button>
     </div>
-    <span class="track-count mono">軌跡 {trackCount}</span>
+    <dl class="recover">
+      <div title="以本空中 session 第一筆有效定位作為發射點"><dt>距發射點</dt><dd class="num">{distance === null ? '--' : formatDistance(distance)}</dd></div>
+      <div><dt>方位</dt><dd class="num">{bearing === null ? '--' : `${Math.round(bearing)}° ${compassLabel(bearing)}`}</dd></div>
+      <div><dt>緯度 / 經度</dt><dd class="num coords">{#if lastValidPosition}{lastValidPosition.lat.toFixed(5)}<br />{lastValidPosition.lng.toFixed(5)}{:else}--{/if}</dd></div>
+    </dl>
   </div>
-
-  <div class="map-wrap">
-    <div class="map" bind:this={mapContainer}></div>
-    {#if mapError}
-      <div class="map-error">{mapError}</div>
-    {/if}
-  </div>
-
-  <div class="gps-readout">
-    <span class="mono">經度 {lastValidPosition ? lastValidPosition.lng.toFixed(6) : '--'}</span>
-    <span class="mono">緯度 {lastValidPosition ? lastValidPosition.lat.toFixed(6) : '--'}</span>
-    <span class="mono">地速 {store.telemetry.groundSpeed.toFixed(1)} m/s</span>
-    <span class="mono">更新 {lastFixTime}</span>
-  </div>
-
-  <div class="map-actions">
-    <button class:active={following} onclick={toggleFollowing}>
-      {following ? '自動跟隨：開' : '自動跟隨：關'}
-    </button>
-    <button onclick={locateRocket} disabled={!lastValidPosition}>定位火箭</button>
-    <button onclick={clearTrack} disabled={trackCount === 0}>清除軌跡</button>
-  </div>
-</article>
+</section>
 
 <style>
-  .gps-card {
+  .gps {
+    position: relative;
+    min-height: 0;
     overflow: hidden;
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    box-shadow: var(--glass-shadow);
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper-2);
   }
 
-  .card-header,
-  .card-header > div,
-  .map-actions {
-    display: flex;
-    align-items: center;
-  }
-  .card-header { justify-content: space-between; gap: var(--sp-2); padding: var(--sp-4) var(--sp-5); }
-  .card-header > div { flex-wrap: wrap; gap: var(--sp-2); }
-  .eyebrow { width: 100%; color: var(--accent-cyan); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; }
-  .header-label { color: var(--text-primary); font-size: var(--fs-md); font-weight: 560; }
-  .status { color: var(--accent-orange); font-size: var(--fs-xs); }
-  .status.valid { color: var(--accent-green); }
-  .track-count { color: var(--text-tertiary); font-size: var(--fs-xs); }
+  .map { position: absolute; inset: 0; background: var(--paper); }
+  .map :global(.chart-tiles) { filter: var(--map-filter); mix-blend-mode: multiply; }
+  :global(:root[data-theme="dark"]) .map :global(.chart-tiles) { mix-blend-mode: screen; }
 
-  .map-wrap { position: relative; overflow: hidden; border-block: 1px solid var(--border-muted); }
-  .map { width: 100%; height: clamp(240px, 30vh, 330px); background: var(--surface); filter: saturate(.72) brightness(.82) contrast(1.08); }
+  .tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 500;
+    max-width: calc(100% - 70px);
+    padding: 8px 11px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--sheet);
+    box-shadow: var(--shadow-pop);
+  }
+  .tag h2 { font-size: 15px; font-weight: 700; line-height: 1.2; }
+  .tag p { margin-top: 3px; color: var(--ink-2); font-size: 12px; }
+  .tag p span:first-child { color: var(--warn); font-weight: 600; }
+  .tag p span.valid { color: var(--live); }
+
   .map-error {
     position: absolute;
-    right: var(--sp-2);
-    bottom: var(--sp-2);
-    left: var(--sp-2);
+    top: 74px;
+    left: 12px;
+    right: 12px;
     z-index: 500;
-    padding: var(--sp-2);
-    border-radius: var(--radius-sm);
-    background: rgba(10, 14, 26, 0.9);
-    color: var(--accent-orange);
-    font-size: var(--fs-xs);
-    text-align: center;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    background: var(--sheet);
+    color: var(--warn);
+    font-size: 12.5px;
+    box-shadow: var(--shadow-pop);
   }
 
-  .gps-readout { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-1); padding: var(--sp-3) var(--sp-5) 0; color: var(--text-secondary); font-size: 10px; }
-  .map-actions { flex-wrap: wrap; gap: var(--sp-2); padding: var(--sp-3) var(--sp-5) var(--sp-4); }
-  .map-actions button {
-    flex: 1;
-    min-width: 78px;
-    padding: var(--sp-2);
-    border: 1px solid var(--surface-border);
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 10px;
+  .dock {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 22px;
+    z-index: 500;
+    display: grid;
+    gap: 8px;
   }
-  .map-actions button.active { border-color: var(--accent-cyan); color: var(--accent-cyan); }
-  .map-actions button:disabled { cursor: not-allowed; opacity: 0.45; }
+
+  .tools { display: flex; gap: 6px; }
+  .tools button {
+    height: 30px;
+    padding: 0 10px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--sheet);
+    color: var(--ink-2);
+    font-size: 12.5px;
+    box-shadow: var(--shadow-pop);
+  }
+  .tools button:hover:not(:disabled) { color: var(--ink); border-color: var(--rule-strong); }
+  .tools button.active { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+  .tools button:disabled { opacity: .55; }
+
+  .recover {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr 1fr;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--sheet);
+    box-shadow: var(--shadow-pop);
+  }
+  .recover div { min-width: 0; padding: 8px 11px; border-right: 1px solid var(--rule); }
+  .recover div:last-child { border-right: 0; }
+  dt { color: var(--ink-3); font-size: 11.5px; }
+  dd { overflow: hidden; font-size: 17px; font-weight: 600; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+  dd.coords { font-size: 13px; font-weight: 500; line-height: 1.25; }
+
+  .gps :global(.leaflet-control-zoom) { border: 1px solid var(--rule) !important; border-radius: var(--radius); box-shadow: var(--shadow-pop); }
+  .gps :global(.leaflet-control-zoom a) { background: var(--sheet); color: var(--ink); border-color: var(--rule); }
+  .gps :global(.leaflet-control-attribution) { background: color-mix(in srgb, var(--sheet) 85%, transparent); color: var(--ink-3); font-size: 10px; }
+  .gps :global(.leaflet-control-attribution a) { color: var(--ink-2); }
 
   :global(.rocket-marker-shell) { background: transparent; border: 0; }
   :global(.rocket-marker) {
-    display: grid;
-    width: 28px;
-    height: 28px;
-    place-items: center;
-    border: 2px solid #00141a;
+    width: 22px;
+    height: 22px;
+    border: 3px solid var(--sheet);
     border-radius: 50%;
-    background: var(--accent-cyan);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
-    color: #00141a;
-    font-size: 16px;
-    transform: rotate(0deg);
+    background: var(--rocket);
+    box-shadow: 0 2px 8px rgba(15, 27, 45, .35);
   }
-
-  @media (max-height: 900px) and (min-width: 1241px) {
-    .card-header { padding: var(--sp-3) var(--sp-4); }
-    .map { height: clamp(150px, 18vh, 190px); }
-    .gps-readout { padding: var(--sp-2) var(--sp-4) 0; }
-    .map-actions { padding: var(--sp-2) var(--sp-4) var(--sp-3); }
+  :global(.launch-marker) {
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid var(--ink);
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--ink) 0 2.5px, var(--sheet) 3px);
   }
 </style>

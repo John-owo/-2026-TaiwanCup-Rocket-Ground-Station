@@ -32,7 +32,11 @@ test('status bar exposes four link states and separates parse failures from CRC 
 });
 
 test('flight session UI displays backend-owned run status and separate statistics', () => {
-  const source = read('../components/FlightControlPanel.svelte');
+  // Session identity lives in the left rail; link statistics live in the status bar.
+  const source = [
+    read('../components/ConnectionPanel.svelte'),
+    read('../components/StatusBar.svelte'),
+  ].join('\n');
   for (const token of [
     'testSessionStatus',
     'testRunId',

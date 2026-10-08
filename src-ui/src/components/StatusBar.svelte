@@ -54,7 +54,6 @@
   });
 
   let linkState = $derived(getTelemetryLinkState(connected, store.lastPacketAt, nowMs));
-  let receiving = $derived(linkState === 'live');
   let statusLabel = $derived({
     standby: '待命',
     waiting: '等待資料',
@@ -63,113 +62,63 @@
   }[linkState]);
 </script>
 
-<div class="status-bar">
-  <div class="status-item">
-    <div class="pulse-dot" class:active={receiving} class:lost={linkState === 'lost'}></div>
-    <span class="status-label">{statusLabel}</span>
-  </div>
-
-  <div class="separator"></div>
-
-  <div class="status-item">
-    <span class="status-label">封包</span>
-    <span class="status-value mono">{stats.totalPackets.toLocaleString()}</span>
-  </div>
-
-  <div class="separator"></div>
-
-  <div class="status-item" class:warn={errorRateLevel === 'warn'} class:crit={errorRateLevel === 'crit'}>
-    <span class="status-label">解析失敗</span>
-    <span
-      class="status-value mono"
-      class:text-red={errorRateLevel === 'crit'}
-      class:text-orange={errorRateLevel === 'warn'}
-      class:text-green={errorRateLevel === 'normal'}
-    >
-      {errorRate.toFixed(1)}%
-    </span>
-    <span class="error-count mono">({stats.failedPackets})</span>
-  </div>
-
-  <div class="separator"></div>
-
-  <div class="status-item">
-    <span class="status-label">CRC 錯誤</span>
-    <span class="status-value mono">{flightStats.crcErrors.toLocaleString()}</span>
-  </div>
-
-  <div class="separator"></div>
-
-  <div class="status-item">
-    <span class="status-label">頻率</span>
-    <span class="status-value mono">{stats.packetsPerSecond.toFixed(1)} Hz</span>
-  </div>
-
-  <div class="separator"></div>
-
-  <div class="status-item">
-    <span class="status-label">運行時間</span>
-    <span class="status-value mono">{elapsed}</span>
-  </div>
-</div>
+<footer class="status-bar" aria-label="通訊診斷">
+  <span class="item link" data-state={linkState}><i aria-hidden="true"></i>{statusLabel}</span>
+  <span class="item">封包<b class="num">{stats.totalPackets.toLocaleString()}</b></span>
+  <span class="item" class:warn={errorRateLevel === 'warn'} class:crit={errorRateLevel === 'crit'}>
+    解析失敗<b class="num">{errorRate.toFixed(1)}%</b><small class="num">({stats.failedPackets})</small>
+  </span>
+  <span class="item">CRC 錯誤<b class="num">{flightStats.crcErrors.toLocaleString()}</b></span>
+  <span class="item">遺失<b class="num">{flightStats.lostPackets}</b></span>
+  <span class="item">重複<b class="num">{flightStats.duplicatePackets}</b></span>
+  <span class="item">失聯<b class="num">{flightStats.linkOutages}</b><small>次，最長</small><b class="num">{(flightStats.maxLinkLossMs / 1000).toFixed(1)} s</b></span>
+  <span class="item">重啟<b class="num">{flightStats.restartCount}</b></span>
+  <span class="item">頻率<b class="num">{stats.packetsPerSecond.toFixed(2)} Hz</b></span>
+  <span class="item">運行時間<b class="num">{elapsed}</b></span>
+  {#if store.demoMode}
+    <span class="demo" title="瀏覽器預覽：未連接 Tauri 後端，數值為模擬飛行">示範資料</span>
+  {/if}
+</footer>
 
 <style>
   .status-bar {
+    grid-column: 2 / -1;
+    min-width: 0;
     display: flex;
     align-items: center;
-    gap: var(--sp-4);
-    min-height: 32px;
-    padding: 6px 22px;
-    border-top: 1px solid var(--border-muted);
-    background: rgba(5, 12, 17, .9);
-    flex-shrink: 0;
+    gap: clamp(14px, 1.4vw, 22px);
+    min-height: 34px;
+    padding: 0 clamp(14px, 1.6vw, 22px);
     overflow-x: auto;
-  }
-
-  .status-item {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
+    border-top: 1px solid var(--rule);
+    background: var(--paper-2);
+    color: var(--ink-2);
+    font-size: 12.5px;
     white-space: nowrap;
+    scrollbar-width: none;
   }
 
-  .separator {
-    width: 1px;
-    height: 16px;
-    background: var(--surface-border);
-    flex-shrink: 0;
-  }
+  .item { display: inline-flex; align-items: baseline; gap: 6px; }
+  b { color: var(--ink); font-size: 13.5px; font-weight: 600; }
+  small { color: var(--ink-3); font-size: 11.5px; }
+  .warn b { color: var(--warn); }
+  .crit b { color: var(--danger); }
 
-  .status-label {
-    color: var(--text-secondary);
-    font-size: var(--fs-xs);
-    font-weight: 500;
-  }
-
-  .status-value {
-    color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-size: var(--fs-sm);
-    font-weight: 600;
-  }
-
-  .error-count {
-    color: var(--text-tertiary);
-    font-family: var(--font-mono);
-    font-size: var(--fs-xs);
-  }
-
-  .pulse-dot {
-    width: 8px;
-    height: 8px;
+  .link { align-items: center; color: var(--ink); font-weight: 600; }
+  .link i {
+    width: 9px;
+    height: 9px;
+    border: 1.5px solid var(--ink-3);
     border-radius: 50%;
-    background: var(--text-tertiary);
-    transition: background var(--transition-base), box-shadow var(--transition-base);
   }
+  .link[data-state="live"] i { border-color: var(--live); background: var(--live); }
+  .link[data-state="waiting"] i { border-style: dashed; }
+  .link[data-state="lost"] { color: var(--danger); }
+  .link[data-state="lost"] i { border-color: var(--danger); background: var(--danger); }
 
-  .pulse-dot.active {
-    background: var(--accent-green);
-    animation: pulse 1.5s ease-in-out infinite;
+  .demo { margin-left: auto; padding-left: 12px; color: var(--warn); font-weight: 700; }
+
+  @media (max-width: 900px) {
+    .status-bar { grid-column: auto; }
   }
-  .pulse-dot.lost { background: var(--accent-red); box-shadow: 0 0 8px rgba(229, 109, 121, .45); }
 </style>
