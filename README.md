@@ -4,19 +4,23 @@
 ![Rust](https://img.shields.io/badge/Rust-1.77%2B-orange)
 ![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
-![Version](https://img.shields.io/badge/version-0.1.3-informational)
+![Version](https://img.shields.io/badge/version-0.1.4-informational)
 
 > 2026 台灣盃火箭競賽「五限可能」地面站監控系統：給地面站操作員即時接收、視覺化、記錄與安全控制火箭遙測資料。
 
 本專案是以 **Tauri v2 + Rust + Svelte 5** 開發的 Windows 桌面應用程式，透過序列埠接收 E22 無線鏈路下傳的遙測，並提供 GPS、姿態估算、雙向倒數控制、強制釋放安全鎖與可稽核的場次資料保存。
 
-最新 portable 版本：[GitHub Releases](https://github.com/John-owo/-2026-TaiwanCup-Rocket-Ground-Station/releases/latest) · 最新驗證版本 `v0.1.3`
+最新 portable 版本：[GitHub Releases](https://github.com/John-owo/-2026-TaiwanCup-Rocket-Ground-Station/releases/latest) · 最新驗證版本 `v0.1.4`
 
 ## 畫面預覽
 
-![主畫面截圖：序列連線、遙測圖表、GPS 地圖與飛行控制](docs/images/main-screen.png)
+![主畫面截圖：日間配色的航空圖風格介面，左側藍色場次欄、中央相對高度與高度剖面、右側 GPS 地圖與飛行控制](docs/images/main-screen.png)
 
-畫面由左至右包含序列連線與測試設定、主要遙測與高度軌跡、GPS 位置，以及 timer／安全控制。頂部與底部狀態列會持續顯示場次、儲存、連線、封包與錯誤狀態。
+![夜間配色主畫面](docs/images/main-screen-dark.png)
+
+介面採「航空圖色階」視覺：淺色圖紙底、左側航圖藍場次欄，洋紅色只用來畫火箭本身（高度曲線、地圖標記與軌跡）。相對高度旁的地形分層色階尺會隨高度移動，高度剖面背景使用同一組色帶。左側欄顯示場次、連線狀態與序列埠設定；中央是主要遙測、高度剖面、估算姿態與全部遙測；右側是 GPS 地圖與飛行控制；底部狀態列顯示通訊診斷。截圖中的數值為瀏覽器示範模式的模擬資料。
+
+設計依據記錄在 [`PRODUCT.md`](PRODUCT.md)（使用者、使用情境與產品原則）與 [`DESIGN.md`](DESIGN.md)（色彩、字體、版面與元件規則）。
 
 ## 目錄
 
@@ -35,15 +39,15 @@
 ### 直接使用 Windows portable 版本
 
 1. 從 [最新 GitHub Release](https://github.com/John-owo/-2026-TaiwanCup-Rocket-Ground-Station/releases/latest) 下載 `.exe`、`.json` 與 `.sha256`。
-2. 先核對 checksum，再開啟 portable `.exe`。目前最新驗證檔案為 `GroundStation_0.1.3_Portable_2026-07-20_230808.exe`。
+2. 先核對 checksum，再開啟 portable `.exe`。目前最新驗證檔案為 `GroundStation_0.1.4_Portable_2026-10-08_175526.exe`。
 3. 接上地面端序列裝置，開啟程式後掃描並選擇 COM Port 與正確 Baud Rate。
 4. 按「開始監控」，填寫測試目的、操作者、地點與起始電池電壓；確認後才會開啟 COM、建立 UUID 場次並開始接收。
 
 PowerShell checksum 核對範例：
 
 ```powershell
-Get-FileHash .\GroundStation_0.1.3_Portable_2026-07-20_230808.exe -Algorithm SHA256
-Get-Content .\GroundStation_0.1.3_Portable_2026-07-20_230808.sha256
+Get-FileHash .\GroundStation_0.1.4_Portable_2026-10-08_175526.exe -Algorithm SHA256
+Get-Content .\GroundStation_0.1.4_Portable_2026-10-08_175526.sha256
 ```
 
 目前 release metadata 與 checksum 也保存在 [`artifacts/`](artifacts/)；最新檔名與 release tag 見 [`artifacts/LATEST.txt`](artifacts/LATEST.txt)。`.exe` 不提交到一般 Git 歷史，只透過版本化 GitHub Release 發布。
@@ -62,11 +66,13 @@ Get-Content .\GroundStation_0.1.3_Portable_2026-07-20_230808.sha256
 |------|------|
 | 🔌 序列埠連線管理 | 開始監控前先填寫場次資料；確認後才原子地開啟 COM、建立場次並接收 |
 | 📡 即時遙測接收 | 解析 Protocol v1／v2 二進位 frame，驗證 CRC-16 後更新 UI |
-| 📊 遙測圖表 | 以相對高度為主視覺，同時顯示垂直速度、地速、氣壓與溫度 |
+| 📊 高度剖面 | 以空中端 uptime 為橫軸繪製目前空中 session 的高度，背景為地形分層色帶；空中端重啟時不會把時間軸折回 |
+| 🎚️ 高度色階尺 | 相對高度旁的分層色階尺與洋紅指針，同時顯示垂直速度、本場最高與空中端時間 |
 | 🧭 姿態估算 | 以 MPU6050 陀螺儀積分與加速度門控估算 Roll／Pitch；Yaw 是相對航向，沒有磁力計絕對校正 |
-| 🗺️ GPS 即時地圖 | 使用 Leaflet／OpenStreetMap 顯示位置、軌跡與自動跟隨 |
+| 🗺️ GPS 即時地圖 | 使用 Leaflet／OpenStreetMap 顯示位置、軌跡與自動跟隨；以本空中 session 第一筆有效定位作為發射點，顯示距發射點距離與方位 |
 | 📋 遙測面板 | 分類顯示 13 項 IMU、GPS／導航與環境資料 |
-| 📶 連線狀態列 | 顯示待命、等待資料、接收中、失聯、封包、解析失敗、CRC、頻率與連線時間 |
+| 📶 連線狀態 | 左側欄以大字顯示待命／等待遙測資料／接收中／失聯；底部狀態列顯示封包、解析失敗、CRC、遺失、重複、失聯、重啟、頻率與運行時間 |
+| 🌗 日間／夜間配色 | 日間配色適合戶外陽光下，夜間配色適合室內與帳篷；由左側欄最下方切換並記住選擇 |
 | 💾 可靠資料記錄 | 以 FIFO writer 保存 SQLite、`flight_data.csv`、`system.log` 與場次摘要 |
 | ⏱️ 雙向飛行控制 | 支援 `SET_TIMER`／`FORCE_RELEASE`、ACK 配對、重送與 session 重啟同步 |
 | 🗂️ 場次管理 | 每次確認監控自動建立 UUID 場次，不需要另按「開始新場次」 |
@@ -76,14 +82,15 @@ Get-Content .\GroundStation_0.1.3_Portable_2026-07-20_230808.sha256
 
 | 區域 | 主要內容 |
 |------|----------|
-| 頂部列 | 隊徽、目前測試場次、儲存狀態、場次狀態、連線狀態與封包數 |
-| 左側欄 | COM Port／Baud Rate、開始／停止監控、姿態軸向設定與協定摘要 |
-| 中央上方 | 相對高度、垂直速度、氣壓、溫度、總加速度與地面速度 |
-| 中央中段 | 高度軌跡、即時摘要與最近遙測資料 |
-| 中央下方 | Roll／Pitch／Yaw 姿態估算與角速度；Yaw 明確標示為相對航向 |
-| 右側上方 | GPS 位置、軌跡、自動跟隨、定位與清除軌跡 |
-| 右側下方 | 空中端 timer、session、剩餘時間、DEPLOY 狀態與 FORCE RELEASE 安全控制 |
-| 底部列 | link 四態、封包／解析／CRC 統計、近期接收頻率與執行時間 |
+| 左側欄 | 目前場次名稱與 RUN ID、場次資料夾、連線四態與最後封包、接收頻率、遺失／CRC、儲存狀態；開始／停止監控；序列埠、Baud Rate、協定；姿態軸向設定；日間／夜間配色 |
+| 中央上方 | 相對高度與高度色階尺、垂直速度、本場最高、空中端時間；總加速度、地面速度、氣壓、溫度 |
+| 中央中段 | 高度剖面（依空中端時間、地形色帶背景） |
+| 中央下方 | 估算姿態（滾轉／俯仰／相對偏航與角速度）與全部 13 項遙測；超過門檻的數值以顏色加「偏高／超限」文字標示 |
+| 右側上方 | GPS 地圖、定位狀態、自動跟隨／定位火箭／清除軌跡、距發射點、方位與經緯度 |
+| 右側下方 | SAFE／DEPLOYED、空中端剩餘倒數、覆蓋倒數、兩段式 FORCE RELEASE 與最近指令狀態 |
+| 底部列 | 通訊診斷：封包、解析失敗、CRC、遺失、重複、失聯次數與最長失聯、重啟、頻率、運行時間 |
+
+預設視窗 1200×800 也能完整操作；視窗較矮時中央區塊可捲動，窄於 900px 時改為單欄。
 
 ## 安裝與開發
 
@@ -119,6 +126,18 @@ Set-Location ..
 
 Tauri 會依 `src-tauri/tauri.conf.json` 自動啟動 `src-ui` 的 Vite server（port `8000`）與原生視窗。
 
+### 瀏覽器示範模式
+
+只調整 UI 時可以不開 Tauri，直接執行 `pnpm --dir .\src-ui dev` 後用瀏覽器開 `http://localhost:8000`。偵測到不在 Tauri 殼內時，前端會改用模擬飛行資料，底部狀態列標示「示範資料」；正式 App 不會啟用。
+
+| 網址參數 | 作用 |
+|---|---|
+| `?demo=flight` | 開啟後直接建立示範場次並開始模擬飛行 |
+| `&at=17` | 預先播放到第 17 秒（0–180），適合拍截圖 |
+| `&theme=dark` 或 `&theme=light` | 指定配色 |
+
+例如海報截圖可用 `http://localhost:8000/?demo=flight&at=17&theme=dark`。示範數值不是實際飛行結果，對外展示時請保留「示範資料」標示或另行註明。
+
 ### 測試、檢查與 production build
 
 ```powershell
@@ -146,7 +165,7 @@ cargo check --locked --manifest-path .\src-tauri/Cargo.toml
 3. `.exe` 不加入 Git；原始碼與 metadata commit／push 後，把 `.exe`、manifest 與 checksum 上傳到新的版本化 GitHub Release。
 4. 從 GitHub Release 重新下載全部資產，核對 release 狀態、檔名、大小與 SHA-256 後，才可宣告 release 完成。
 
-最新已驗證 metadata：[`GroundStation_0.1.3_Portable_2026-07-20_230808.json`](artifacts/GroundStation_0.1.3_Portable_2026-07-20_230808.json)。驗證包含 frontend 48 passed、Svelte／TypeScript 0 errors／0 warnings、production build、Rust 31 passed、`cargo check --locked`、SQLite migration readback 與 Tauri no-bundle build。
+最新已驗證 metadata：[`GroundStation_0.1.4_Portable_2026-10-08_175526.json`](artifacts/GroundStation_0.1.4_Portable_2026-10-08_175526.json)。驗證包含 frontend 53 passed、Svelte／TypeScript 0 errors／0 warnings、production build、Rust 44 passed、`cargo check --locked` 與 Tauri no-bundle build。v0.1.4 的新介面只在瀏覽器示範模式驗證過，實機 Tauri 視窗與 E22 硬體測試仍待完成。
 
 ## 遙測封包格式
 
@@ -225,7 +244,8 @@ Protocol v2 的有效旗標與定點溢位規則由 parser 處理；無效感測
 
 - MPU6050 沒有磁力計，Yaw 是相對航向，會隨時間漂移，不可當作真北航向。
 - GPS 地圖需要網路；圖磚載入失敗不會停止 GPS 數值、序列埠或其他遙測。
-- 地圖使用 OpenStreetMap 標準圖磚並保留 attribution；不提供背景預抓、批次下載或離線圖磚。
+- 地圖使用 OpenStreetMap 標準圖磚並保留 attribution；不提供背景預抓、批次下載或離線圖磚。夜間配色以濾鏡反轉圖磚顏色。
+- 「距發射點」以本空中 session 第一筆有效定位為基準；若開始監控時火箭已離開發射架，這個距離不代表真正的發射點。
 
 自動化測試不能取代 E22 半雙工、伺服、假負載與實際開傘機構的現場驗證；完整步驟由團隊硬體測試計畫另行維護。
 
@@ -258,10 +278,13 @@ ground_station/
 │       ├── link/              # Serial／TCP／Memory 傳輸層與 TransportConfig
 │       └── serial/            # CRC、parser、command encoder、LinkReceiver 協定 session
 ├── artifacts/                 # release metadata、checksum、LATEST；portable exe 不入 Git
+├── PRODUCT.md                 # 使用者、使用情境與產品原則（設計依據）
+├── DESIGN.md                  # 視覺系統：色彩、字體、版面與元件規則
+├── .impeccable/               # 設計方向合約、樣稿與審查截圖（開發用）
 ├── docs/
 │   ├── ARCHITECTURE.md        # 詳細分層、資料流與保存流程
 │   ├── protocol/              # Protocol v1/v2 規格、vectors 與驗證腳本
-│   └── images/main-screen.png # 主畫面預覽
+│   └── images/                # 主畫面預覽（日間／夜間）
 └── README.md
 ```
 

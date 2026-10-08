@@ -1,0 +1,21 @@
+{
+  "productName": "五限可能地面站監控程式",
+  "version": "0.1.4",
+  "builtAt": "2026-10-08T17:55:27+08:00",
+  "executable": "GroundStation_0.1.4_Portable_2026-10-08_175526.exe",
+  "source": "src-tauri/target/release/app.exe",
+  "sourceCommit": "db86bb7ad9534c658117c0856f0ecf1e03e88004",
+  "releaseTag": "v0.1.4",
+  "releasePage": "https://github.com/John-owo/-2026-TaiwanCup-Rocket-Ground-Station/releases/tag/v0.1.4",
+  "sizeBytes": 12841984,
+  "sha256": "78387C1CAC78E9A701B8336909C7856626F0144E51FA3FC9B7691FF5B658BA21",
+  "validation": [
+    "pnpm test (53 passed)",
+    "pnpm check (0 errors, 0 warnings)",
+    "pnpm build",
+    "cargo test --locked (44 passed, 1 external fixture test ignored by default)",
+    "cargo check --locked",
+    "tauri build --no-bundle",
+    "UI verified in browser demo mode only; not yet verified in the Tauri window or with E22 hardware"
+  ]
+}

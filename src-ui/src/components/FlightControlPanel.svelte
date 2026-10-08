@@ -12,7 +12,6 @@
 
   let telemetry = $derived(store.telemetry);
   let commandStatus = $derived(store.commandStatus);
-  let stats = $derived(store.flightStats);
   let session = $derived(store.testSessionStatus);
   let controlsEnabled = $derived(
     session.phase === 'recording' || session.phase === 'monitoring_unrecorded',
@@ -23,22 +22,21 @@
   let forceAvailable = $derived(
     controlsEnabled && airborneLinkState === 'live' && telemetry.deployState !== 1,
   );
+  let deployed = $derived(telemetry.deployState === 1);
+  let hasTelemetry = $derived(store.telemetryRevision > 0);
+  const commandLabels = {
+    queued: '排隊中',
+    sending: '已送出，等待確認',
+    acked: '已確認',
+    failed: '失敗',
+    ignored_ack: '忽略過期確認',
+    cancelled: '已取消',
+  } as const;
   let lastPacket = $derived(
     store.lastPacketAt === null
       ? '--'
       : new Date(store.lastPacketAt).toLocaleTimeString('zh-TW', { hour12: false }),
   );
-
-  const phaseLabels = {
-    disconnected: '未連線',
-    starting: '啟動中',
-    recording: '記錄中',
-    monitoring_unrecorded: '僅監控（不記錄）',
-    finishing: '結束中',
-    completed: '已完成',
-    interrupted: '未正常完成',
-    failed: '啟動失敗',
-  } as const;
 
   $effect(() => {
     if (!controlsEnabled) {
@@ -104,140 +102,171 @@
   }
 </script>
 
-<section class="flight-control-panel">
-  <div class="panel-header">
-    <div><span>COMMAND CONSOLE</span><h3>飛行控制</h3></div>
-    <span class:deployed={telemetry.deployState === 1} class="deploy-state">
-      {telemetry.deployState === 1 ? 'DEPLOYED' : 'SAFE'}
+<section class="control" aria-label="飛行控制">
+  <header>
+    <h2>飛行控制</h2>
+    <span class="deploy-state" class:deployed>
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+        {#if deployed}
+          <path d="M7 1.5v6M3.2 4.2a5 5 0 1 0 7.6 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+        {:else}
+          <path d="M7 1 12 3v4c0 3-2.5 5-5 6-2.5-1-5-3-5-6V3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+        {/if}
+      </svg>
+      {deployed ? 'DEPLOYED' : 'SAFE'}
     </span>
-  </div>
+  </header>
 
-  <div class="test-run-state" class:recording={session.phase === 'recording'} class:warning={session.phase === 'monitoring_unrecorded' || session.phase === 'interrupted'}>
-    <strong>{phaseLabels[session.phase]}</strong>
-    {#if session.purpose}<span>目的：{session.purpose}</span>{/if}
-    {#if session.testRunId}<span class="mono">場次 ID：{session.testRunId}</span>{/if}
-    {#if session.directory}<span class="directory">資料夾：{session.directory}</span>{/if}
-    {#if session.detail}<small>{session.detail}</small>{/if}
-  </div>
-
-  <div class="air-state">
-    <span>空中 Session <strong class="mono">{telemetry.sessionId ? `0x${telemetry.sessionId.toString(16).toUpperCase().padStart(8, '0')}` : '--'}</strong></span>
-    <span>空中端剩餘 <strong class="mono">{telemetry.remainingS} s</strong></span>
-    <span>最後封包 <strong class="mono">{lastPacket}</strong></span>
-    <span>強制釋放 <strong>{airborneLinkState === 'live' ? '可解鎖' : '需即時空中遙測'}</strong></span>
-  </div>
-
-  <div class="timer-row">
-    <label for="timer-seconds">設定倒數（秒）</label>
-    <div>
-      <input id="timer-seconds" type="number" min="1" step="1" bind:value={timerSeconds} disabled={busy || !controlsEnabled || telemetry.deployState === 1} />
-      <button onclick={applyTimer} disabled={busy || !controlsEnabled || telemetry.deployState === 1}>覆蓋 timer</button>
+  <div class="timer">
+    <div class="remaining">
+      <span>空中端剩餘倒數</span>
+      <strong class="num">{hasTelemetry ? telemetry.remainingS : '--'}<small>s</small></strong>
+    </div>
+    <div class="set">
+      <label for="timer-seconds" class="visually-hidden">設定倒數秒數</label>
+      <input id="timer-seconds" class="num" type="number" min="1" step="1" bind:value={timerSeconds} disabled={busy || !controlsEnabled || telemetry.deployState === 1} />
+      <button class="apply" onclick={applyTimer} disabled={busy || !controlsEnabled || telemetry.deployState === 1}>覆蓋倒數</button>
     </div>
   </div>
 
-  <div class="release-controls">
+  <div class="release">
     <button
+      class="arm"
       class:unlocked={safetyUnlocked}
-      class="safety-button"
       onclick={() => { safetyUnlocked = !safetyUnlocked; }}
       disabled={busy || !forceAvailable}
+      aria-pressed={safetyUnlocked}
     >
-      {safetyUnlocked ? '安全鎖已解除' : '解除安全鎖'}
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+        <rect x="3" y="7" width="10" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.6" />
+        <path d={safetyUnlocked ? 'M5 7V5a3 3 0 0 1 5.8-1' : 'M5 7V5a3 3 0 0 1 6 0v2'} fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+      </svg>
+      {safetyUnlocked ? '重新上鎖' : '解除安全鎖'}
     </button>
-    <button
-      class="release-button"
-      onclick={releaseNow}
-      disabled={busy || !forceAvailable || !safetyUnlocked}
-    >
+    <button class="fire num" class:ready={safetyUnlocked && forceAvailable} onclick={releaseNow} disabled={busy || !forceAvailable || !safetyUnlocked}>
       FORCE RELEASE
     </button>
   </div>
 
-  <div class="command-status" class:failed={commandStatus?.status === 'failed'}>
-    <span>指令狀態</span>
-    <strong>{commandStatus?.status ?? '待命'}</strong>
-    {#if commandStatus}
-      <small class="mono">{commandStatus.commandType} · ID {commandStatus.commandId ?? '--'} · 第 {commandStatus.attempts} 次</small>
-      <small>{commandStatus.detail}</small>
+  <p class="gate">
+    {#if deployed}
+      空中端已 DEPLOYED，不再接受倒數與強制釋放。
+    {:else if forceAvailable}
+      即時遙測正常 · 最後封包 <span class="num">{lastPacket}</span>。解鎖後單擊才會送出一次。
+    {:else}
+      強制釋放已鎖定：需要 4.5 秒內的即時遙測，且場次未變更。
     {/if}
-  </div>
+  </p>
 
-  <div class="stats-grid">
-    <span>遺失 <strong>{stats.lostPackets}</strong></span>
-    <span>重複 <strong>{stats.duplicatePackets}</strong></span>
-    <span>CRC <strong>{stats.crcErrors}</strong></span>
-    <span>失聯 <strong>{stats.linkOutages}</strong></span>
-    <span>最長失聯 <strong>{(stats.maxLinkLossMs / 1000).toFixed(1)} s</strong></span>
-    <span>重啟 <strong>{stats.restartCount}</strong></span>
-  </div>
+  {#if commandStatus}
+    <p class="command" class:failed={commandStatus.status === 'failed'}>
+      最近指令 <b>{commandStatus.commandType} #{commandStatus.commandId ?? '--'}</b>
+      · {commandLabels[commandStatus.status] ?? commandStatus.status} · 第 <span class="num">{commandStatus.attempts}</span> 次傳送
+      {#if commandStatus.status === 'failed'}<span class="detail">{commandStatus.detail}</span>{/if}
+    </p>
+  {/if}
 
   {#if errorMessage}
-    <div class="error-message">{errorMessage}</div>
+    <p class="error-message" role="alert">{errorMessage}</p>
   {/if}
 </section>
 
 <style>
-  .flight-control-panel {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-3);
-    padding: var(--sp-5);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    box-shadow: var(--glass-shadow);
+  .control {
+    display: grid;
+    gap: 12px;
+    padding: 16px clamp(16px, 1.6vw, 22px) 16px;
+    background: var(--sheet);
   }
-  .panel-header,
-  .timer-row > div,
-  .release-controls {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
-  }
-  .panel-header { justify-content: space-between; }
-  .panel-header > div > span { color: var(--accent-cyan); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; }
-  h3 { margin-top: 3px; font-size: var(--fs-md); font-weight: 560; }
-  .deploy-state { color: var(--accent-green); font-family: var(--font-mono); font-size: var(--fs-xs); }
-  .deploy-state.deployed { color: var(--accent-red); }
-  .air-state,
-  .command-status,
-  .test-run-state,
-  .stats-grid { display: grid; gap: var(--sp-1); }
-  .test-run-state { padding: var(--sp-3); border: 1px solid var(--surface-border); border-radius: var(--radius-sm); background: rgba(5, 13, 18, .3); color: var(--text-secondary); font-size: var(--fs-xs); }
-  .test-run-state.recording { border-color: rgba(115, 210, 182, .34); }
-  .test-run-state.warning { border-color: rgba(221, 169, 93, .4); }
-  .directory { overflow-wrap: anywhere; }
-  .air-state { color: var(--text-secondary); font-size: var(--fs-xs); }
-  label { color: var(--text-secondary); font-size: var(--fs-xs); }
-  input {
-    width: 100%;
-    padding: var(--sp-2);
-    border: 1px solid var(--surface-border);
-    border-radius: var(--radius-sm);
-    background: var(--bg-field);
-    color: var(--text-primary);
-  }
-  button {
-    padding: var(--sp-2) var(--sp-3);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--surface-border);
-    background: transparent;
-    color: var(--text-primary);
-  }
-  button:disabled { cursor: not-allowed; opacity: 0.4; }
-  .safety-button.unlocked { border: 1px solid var(--accent-orange); color: var(--accent-orange); }
-  .release-button { border-color: rgba(229, 109, 121, .5); background: var(--accent-red-dim); color: var(--accent-red); font-weight: 700; letter-spacing: .04em; }
-  .command-status,
-  .stats-grid { padding: var(--sp-3); border-radius: var(--radius-sm); background: var(--bg-field); font-size: var(--fs-xs); }
-  .command-status.failed { border: 1px solid var(--accent-red); }
-  .stats-grid { grid-template-columns: 1fr 1fr; color: var(--text-secondary); }
-  .stats-grid strong { color: var(--text-primary); }
-  .error-message { color: var(--accent-red); font-size: var(--fs-xs); }
 
-  @media (max-height: 900px) and (min-width: 1241px) {
-    .flight-control-panel { gap: var(--sp-2); padding: var(--sp-4); }
-    .test-run-state,
-    .command-status,
-    .stats-grid { padding: var(--sp-2) var(--sp-3); }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  h2 { font-size: 15px; font-weight: 700; }
+
+  .deploy-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 11px;
+    border: 1.5px solid var(--live);
+    border-radius: var(--radius);
+    color: var(--live);
+    font-family: var(--font-num);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .06em;
+  }
+  .deploy-state.deployed { border-color: var(--danger); background: var(--danger); color: #fff; }
+
+  .timer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 13px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--paper);
+  }
+  .remaining span { display: block; color: var(--ink-3); font-size: 12px; }
+  .remaining strong { font-size: 34px; font-weight: 600; line-height: 1; }
+  .remaining small { margin-left: 3px; color: var(--ink-3); font-size: 15px; }
+
+  .set { display: flex; gap: 6px; }
+  .set input {
+    width: 66px;
+    height: 38px;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+    background: var(--field);
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .set input:focus { border-color: var(--ink); }
+  .apply {
+    height: 38px;
+    padding: 0 12px;
+    border-radius: var(--radius);
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+  .apply:hover:not(:disabled) { background: var(--ink-2); }
+  .set input:disabled,
+  .apply:disabled { opacity: .45; }
+
+  .release { display: grid; grid-template-columns: 1fr 1.25fr; gap: 8px; }
+  .release button { min-height: 50px; border-radius: var(--radius); font-size: 14.5px; font-weight: 700; }
+  .arm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1.5px solid var(--danger);
+    color: var(--danger);
+  }
+  .arm:hover:not(:disabled) { background: var(--danger-soft); }
+  .arm.unlocked { background: var(--danger-soft); }
+  .arm:disabled { border-color: var(--rule-strong); color: var(--ink-3); }
+  .fire {
+    background: repeating-linear-gradient(-45deg, var(--paper-2) 0 8px, var(--rule) 8px 16px);
+    color: var(--ink-3);
+    letter-spacing: .05em;
+  }
+  .fire.ready { background: var(--danger); color: #fff; box-shadow: 0 4px 14px rgba(179, 38, 30, .35); }
+  .fire.ready:hover { filter: brightness(1.08); }
+
+  .gate { color: var(--ink-3); font-size: 12px; line-height: 1.5; }
+  .command { color: var(--ink-3); font-size: 12px; }
+  .command b { color: var(--ink-2); font-weight: 600; }
+  .command.failed,
+  .command.failed b { color: var(--danger); }
+  .command .detail { display: block; margin-top: 2px; }
+  .error-message { color: var(--danger); font-size: 12.5px; }
+
+  @media (max-height: 820px) {
+    .control { gap: 10px; padding-top: 13px; padding-bottom: 13px; }
+    .release button { min-height: 44px; }
   }
 </style>

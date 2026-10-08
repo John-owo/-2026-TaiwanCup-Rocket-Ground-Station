@@ -7,28 +7,11 @@
   import FlightControlPanel from '@/components/FlightControlPanel.svelte';
   import TelemetryGrid from '@/components/TelemetryGrid.svelte';
   import TelemetryCharts from '@/components/TelemetryCharts.svelte';
+  import TelemetryTable from '@/components/TelemetryTable.svelte';
   import GpsMap from '@/components/GpsMap.svelte';
   import AttitudeIndicator from '@/components/AttitudeIndicator.svelte';
   import StatusBar from '@/components/StatusBar.svelte';
   import TestSessionDialog from '@/components/TestSessionDialog.svelte';
-
-  let connected = $derived(store.connected);
-  let packets = $derived(store.stats.totalPackets);
-  let storage = $derived(store.storageStatus);
-  let session = $derived(store.testSessionStatus);
-  let purpose = $derived(session.purpose || '尚未開始測試');
-  let runLabel = $derived(session.testRunId ? session.testRunId.slice(0, 8).toUpperCase() : '--');
-
-  const phaseLabels = {
-    disconnected: '待命',
-    starting: '啟動中',
-    recording: '記錄中',
-    monitoring_unrecorded: '僅監控',
-    finishing: '結束中',
-    completed: '已完成',
-    interrupted: '未完成',
-    failed: '啟動失敗',
-  } as const;
 
   $effect(() => {
     let unlisteners: UnlistenFn[] = [];
@@ -53,53 +36,23 @@
 </script>
 
 <div class="app-layout">
-  <header class="top-bar">
-    <div class="brand">
-      <img class="brand-mark" src="/assets/5-space-emblem.png" alt="5 SPACE 隊徽" />
-      <div class="brand-copy">
-        <strong>GROUND STATION</strong>
-        <span>Rocket Telemetry Console</span>
-      </div>
-    </div>
+  <aside class="sidebar-left" aria-label="場次與連線">
+    <ConnectionPanel />
+  </aside>
 
-    <div class="run-identity">
-      <span>目前測試場次</span>
-      <h1>{purpose}</h1>
-      <small class="mono">RUN {runLabel}</small>
-    </div>
-
-    <div class="system-state" aria-label="系統狀態">
-      <span class="data-chip mono">封包 {packets.toLocaleString()}</span>
-      <span class:healthy={storage.phase === 'healthy'} class:failed={storage.phase === 'failed'} class="storage-chip">
-        {storage.phase === 'healthy' ? '儲存正常' : storage.phase === 'degraded' ? '儲存降級' : storage.phase === 'failed' ? '儲存失敗' : '儲存初始化'}
-      </span>
-      <span class:active={session.phase === 'recording' || session.phase === 'monitoring_unrecorded'} class="run-chip">
-        {phaseLabels[session.phase]}
-      </span>
-      <span class:online={connected} class="connection-chip">
-        <i aria-hidden="true"></i>{connected ? '已連線' : '未連線'}
-      </span>
-    </div>
-  </header>
-
-  <div class="main-content">
-    <aside class="sidebar-left" aria-label="連線與測試設定">
-      <div class="sticky-panel">
-        <ConnectionPanel />
-      </div>
-    </aside>
-
-    <main class="center-area">
-      <TelemetryGrid />
-      <TelemetryCharts />
+  <main class="center-area">
+    <TelemetryGrid />
+    <TelemetryCharts />
+    <div class="lower-row">
       <AttitudeIndicator />
-    </main>
+      <TelemetryTable />
+    </div>
+  </main>
 
-    <aside class="sidebar-right" aria-label="定位與安全控制">
-      <GpsMap />
-      <FlightControlPanel />
-    </aside>
-  </div>
+  <aside class="sidebar-right" aria-label="定位與飛行控制">
+    <GpsMap />
+    <FlightControlPanel />
+  </aside>
 
   <StatusBar />
   <TestSessionDialog />
@@ -107,169 +60,60 @@
 
 <style>
   .app-layout {
-    position: relative;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    min-height: 100dvh;
-    max-height: 100dvh;
+    grid-template-columns: clamp(216px, 17vw, 264px) minmax(0, 1fr) clamp(320px, 26vw, 400px);
+    grid-template-rows: minmax(0, 1fr) auto;
+    height: 100dvh;
     overflow: hidden;
-    background: var(--bg-gradient);
-  }
-
-  .top-bar {
-    min-height: 78px;
-    display: grid;
-    grid-template-columns: minmax(300px, .9fr) minmax(300px, 1.2fr) minmax(400px, 1fr);
-    align-items: center;
-    gap: 18px;
-    padding: 0 22px;
-    border-bottom: 1px solid var(--border-muted);
-    background: rgba(6, 14, 19, .86);
-    backdrop-filter: blur(18px);
-    z-index: 10;
-  }
-
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
-  }
-
-  .brand-mark {
-    width: 122px;
-    height: 42px;
-    object-fit: contain;
-    flex: 0 0 auto;
-  }
-
-  .brand-copy { min-width: 0; }
-  .brand-copy strong {
-    display: block;
-    font-size: 12px;
-    font-weight: 650;
-    letter-spacing: .13em;
-  }
-  .brand-copy span { color: var(--text-tertiary); font-size: 10px; letter-spacing: .06em; }
-
-  .run-identity {
-    min-width: 0;
-    padding-left: 18px;
-    border-left: 1px solid var(--border);
-  }
-  .run-identity > span { color: var(--text-secondary); font-size: 10px; letter-spacing: .08em; }
-  .run-identity h1 {
-    margin: 3px 0 0;
-    overflow: hidden;
-    color: var(--text-primary);
-    font-size: clamp(16px, 1.4vw, 21px);
-    font-weight: 560;
-    letter-spacing: -.02em;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .run-identity small { display: block; margin-top: 2px; color: var(--text-tertiary); font-size: 9px; }
-
-  .system-state {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .data-chip,
-  .storage-chip,
-  .run-chip,
-  .connection-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    min-height: 30px;
-    padding: 0 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-full);
-    background: rgba(14, 27, 35, .7);
-    color: var(--text-secondary);
-    font-size: 10px;
-    white-space: nowrap;
-  }
-
-  .storage-chip { color: var(--accent-orange); }
-  .storage-chip.healthy,
-  .run-chip.active { color: var(--accent-cyan); border-color: rgba(115, 210, 182, .28); }
-  .storage-chip.failed { color: var(--accent-red); border-color: rgba(229, 109, 121, .34); }
-  .connection-chip { color: var(--accent-red); }
-  .connection-chip.online { color: var(--accent-cyan); }
-  .connection-chip i {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-  }
-
-  .main-content {
-    display: grid;
-    grid-template-columns: 244px minmax(500px, 1fr) minmax(330px, 380px);
-    align-items: start;
-    gap: 16px;
-    min-height: 0;
-    padding: 16px 18px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    scrollbar-gutter: stable;
-  }
-
-  .sidebar-left,
-  .sidebar-right,
-  .center-area {
-    min-width: 0;
-    min-height: 0;
-    align-self: start;
+    background: var(--paper);
   }
 
   .sidebar-left {
-    align-self: stretch;
+    grid-row: 1 / 3;
+    min-height: 0;
     z-index: 2;
   }
 
-  .sticky-panel {
-    position: sticky;
-    top: 0;
-  }
-
-  .sidebar-right,
   .center-area {
     display: grid;
-    grid-auto-rows: max-content;
-    align-content: start;
-    gap: 16px;
+    grid-template-rows: auto minmax(230px, 1fr) auto;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    border-right: 1px solid var(--rule);
   }
 
-  @media (max-width: 1240px) {
-    .top-bar { grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); }
-    .system-state { grid-column: 1 / -1; justify-content: flex-start; padding-bottom: 12px; }
-    .main-content { grid-template-columns: 230px minmax(0, 1fr); }
-    .sidebar-right { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(330px, .8fr); }
+  .lower-row {
+    display: grid;
+    grid-template-columns: minmax(270px, .42fr) minmax(0, 1fr);
+    min-height: 0;
+    border-top: 1px solid var(--rule);
   }
 
-  @media (max-height: 900px) and (min-width: 1241px) {
-    .top-bar { min-height: 70px; }
-    .main-content { gap: 12px; padding: 12px 14px; }
-    .sidebar-right,
-    .center-area { gap: 12px; }
+  .sidebar-right {
+    display: grid;
+    grid-template-rows: minmax(200px, 1fr) auto;
+    min-width: 0;
+    min-height: 0;
   }
 
-  @media (max-width: 780px) {
-    .app-layout { max-height: none; overflow: visible; }
-    .top-bar { display: flex; flex-wrap: wrap; padding: 13px 14px; }
-    .brand-copy { display: none; }
-    .run-identity { order: 3; width: 100%; padding: 10px 0 0; border-top: 1px solid var(--border-muted); border-left: 0; }
-    .system-state { margin-left: auto; padding: 0; }
-    .data-chip,
-    .run-chip { display: none; }
-    .main-content { grid-template-columns: 1fr; padding: 12px; overflow: visible; }
-    .sticky-panel { position: static; }
-    .sidebar-right { grid-column: auto; grid-template-columns: 1fr; }
+  @media (max-width: 1360px) {
+    .lower-row { grid-template-columns: minmax(230px, .34fr) minmax(0, 1fr); }
+  }
+
+  @media (max-width: 1180px) {
+    .lower-row { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 900px) {
+    .app-layout {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto;
+      height: auto;
+      overflow: visible;
+    }
+    .sidebar-left { grid-row: auto; }
+    .center-area { border-right: 0; overflow: visible; }
+    .sidebar-right { grid-template-rows: 340px auto; border-top: 1px solid var(--rule); }
   }
 </style>

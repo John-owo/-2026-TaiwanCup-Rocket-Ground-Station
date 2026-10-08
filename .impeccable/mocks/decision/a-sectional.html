@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>方向 A · 航空圖色階</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #edf0ea;
+    --paper-2: #e3e8e1;
+    --sheet: #f6f8f4;
+    --ink: #0f1b2d;
+    --ink-2: #435168;
+    --ink-3: #6b778a;
+    --rule: #c6cec5;
+    --rule-strong: #9eaaa0;
+    --rail: #1b4f8f;
+    --rail-deep: #143d70;
+    --rail-ink: #eef3fa;
+    --rail-ink-2: #b9cbe3;
+    --magenta: #a3166f;
+    --live: #1d7444;
+    --warn: #9a5800;
+    --danger: #b3261e;
+    --t0: #cfe0bb; --t1: #e2e6a8; --t2: #ecd391; --t3: #e2b27c; --t4: #cd916c; --t5: #b47566;
+    --num: "Barlow", "Noto Sans TC", sans-serif;
+    --cond: "Barlow Semi Condensed", "Noto Sans TC", sans-serif;
+    --zh: "Noto Sans TC", "Barlow", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  ::selection { background: var(--magenta); color: #fff; }
+  body { width: 1440px; height: 900px; overflow: hidden; background: var(--paper); color: var(--ink); font: 14px/1.45 var(--zh); font-variant-numeric: tabular-nums; }
+  .app { display: grid; grid-template-columns: 248px 1fr 372px; grid-template-rows: 1fr 34px; height: 100%; }
+
+  /* rail */
+  .rail { grid-row: 1 / 3; background: var(--rail); color: var(--rail-ink); display: flex; flex-direction: column; padding: 22px 20px 18px; gap: 22px; }
+  .mark { display: flex; align-items: center; gap: 10px; font: 600 15px/1 var(--zh); letter-spacing: .02em; }
+  .mark svg { flex: none; }
+  .mark small { display: block; margin-top: 4px; color: var(--rail-ink-2); font: 500 12px/1 var(--zh); letter-spacing: 0; }
+  .session { padding-top: 18px; border-top: 1px solid rgba(238,243,250,.22); }
+  .session .lbl { color: var(--rail-ink-2); font-size: 12px; }
+  .session h1 { margin-top: 6px; font: 700 22px/1.25 var(--zh); letter-spacing: -.01em; }
+  .session .run { margin-top: 6px; color: var(--rail-ink-2); font: 500 13px/1 var(--num); letter-spacing: .02em; }
+  .link { background: var(--rail-deep); border-radius: 6px; padding: 14px 14px 12px; }
+  .link .state { display: flex; align-items: center; gap: 9px; font: 700 20px/1 var(--zh); }
+  .link .state i { width: 12px; height: 12px; border-radius: 50%; background: #6fdc9b; box-shadow: 0 0 0 4px rgba(111,220,155,.22); }
+  .link dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin-top: 12px; font-size: 13px; }
+  .link dt { color: var(--rail-ink-2); }
+  .link dd { text-align: right; font: 600 14px/1.3 var(--num); }
+  .rail .stop { margin-top: auto; height: 46px; border: 1.5px solid var(--rail-ink); border-radius: 6px; background: transparent; color: var(--rail-ink); font: 700 15px/1 var(--zh); cursor: pointer; }
+  .rail .conn { display: grid; gap: 6px; font-size: 12.5px; color: var(--rail-ink-2); }
+  .rail .conn b { color: var(--rail-ink); font: 600 13px/1 var(--num); }
+  .rail .conn a { color: var(--rail-ink); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* center */
+  .center { display: grid; grid-template-rows: auto 1fr auto; gap: 0; min-width: 0; border-right: 1px solid var(--rule); }
+  .readout { display: grid; grid-template-columns: 1fr 300px; border-bottom: 1px solid var(--rule); }
+  .alt { display: grid; grid-template-columns: 46px 1fr; gap: 22px; padding: 26px 28px 22px; }
+  .ladder { position: relative; display: grid; grid-template-rows: repeat(6, 1fr); border: 1px solid var(--rule-strong); border-radius: 3px; overflow: hidden; }
+  .ladder span:nth-child(1){background:var(--t5)} .ladder span:nth-child(2){background:var(--t4)} .ladder span:nth-child(3){background:var(--t3)} .ladder span:nth-child(4){background:var(--t2)} .ladder span:nth-child(5){background:var(--t1)} .ladder span:nth-child(6){background:var(--t0)}
+  .ladder .pin { position: absolute; left: -2px; right: -2px; top: 49%; height: 3px; background: var(--magenta); }
+  .ladder .pin::after { content: ''; position: absolute; right: -9px; top: -5px; border: 6.5px solid transparent; border-left: 8px solid var(--magenta); }
+  .alt h2 { font: 500 15px/1 var(--zh); color: var(--ink-2); }
+  .alt .value { display: flex; align-items: baseline; gap: 10px; margin-top: 10px; }
+  .alt .value strong { font: 600 124px/.86 var(--num); letter-spacing: -.035em; }
+  .alt .value span { font: 600 26px/1 var(--num); color: var(--ink-2); }
+  .alt .trend { display: flex; gap: 22px; margin-top: 16px; font-size: 14px; color: var(--ink-2); }
+  .alt .trend b { color: var(--ink); font: 600 20px/1 var(--num); margin-right: 4px; }
+  .alt .trend .up { color: var(--live); }
+  .side-read { display: grid; grid-template-rows: repeat(4, 1fr); border-left: 1px solid var(--rule); }
+  .side-read div { display: flex; align-items: baseline; justify-content: space-between; padding: 0 22px; border-bottom: 1px solid var(--rule); }
+  .side-read div:last-child { border-bottom: 0; }
+  .side-read span { color: var(--ink-2); font-size: 13.5px; align-self: center; }
+  .side-read b { font: 600 26px/1 var(--num); align-self: center; }
+  .side-read b small { font: 500 13px/1 var(--num); color: var(--ink-3); margin-left: 4px; }
+
+  .profile { padding: 18px 28px 12px; min-height: 0; display: grid; grid-template-rows: auto 1fr; }
+  .profile header { display: flex; justify-content: space-between; align-items: baseline; }
+  .profile h2 { font: 700 15px/1 var(--zh); }
+  .profile header p { color: var(--ink-3); font-size: 12.5px; }
+  .profile header p b { color: var(--magenta); font: 600 13px/1 var(--num); }
+  .profile svg { width: 100%; height: 100%; margin-top: 10px; }
+
+  .lower { display: grid; grid-template-columns: 300px 1fr; border-top: 1px solid var(--rule); height: 214px; }
+  .att { padding: 16px 22px; border-right: 1px solid var(--rule); display: grid; grid-template-columns: 112px 1fr; gap: 16px; align-items: center; }
+  .att h2, .table h2 { grid-column: 1 / -1; font: 700 15px/1 var(--zh); display: flex; justify-content: space-between; align-items: baseline; }
+  .att h2 small, .table h2 small { font: 400 12px/1 var(--zh); color: var(--ink-3); }
+  .att dl { display: grid; gap: 8px; }
+  .att dt { color: var(--ink-3); font-size: 12px; }
+  .att dd { font: 600 20px/1 var(--num); }
+  .table { padding: 16px 24px 10px; overflow: hidden; }
+  .table table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+  .table td { padding: 5.5px 0; border-bottom: 1px solid var(--rule); }
+  .table td.n { text-align: right; font: 500 14px/1 var(--num); padding-right: 6px; }
+  .table td.u { color: var(--ink-3); font: 400 12px/1 var(--num); width: 46px; }
+  .table td.k { color: var(--ink-2); padding-left: 18px; white-space: nowrap; }
+  .table td.k:first-child { padding-left: 0; }
+
+  /* right */
+  .right { display: grid; grid-template-rows: 1fr auto; min-height: 0; }
+  .map { position: relative; border-bottom: 1px solid var(--rule); overflow: hidden; background: #e9eee4; }
+  .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .map .tag { position: absolute; left: 16px; top: 14px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; padding: 8px 10px; }
+  .map .tag h2 { font: 700 15px/1 var(--zh); }
+  .map .tag p { margin-top: 5px; font-size: 12px; color: var(--ink-2); }
+  .map .recover { position: absolute; left: 16px; right: 16px; bottom: 14px; display: grid; grid-template-columns: repeat(3, 1fr); background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; }
+  .map .recover div { padding: 9px 12px; border-right: 1px solid var(--rule); }
+  .map .recover div:last-child { border-right: 0; }
+  .map .recover span { display: block; color: var(--ink-3); font-size: 11.5px; }
+  .map .recover b { font: 600 17px/1.2 var(--num); }
+
+  .cmd { padding: 18px 22px 18px; display: grid; gap: 14px; background: var(--sheet); }
+  .cmd .top { display: flex; justify-content: space-between; align-items: center; }
+  .cmd h2 { font: 700 15px/1 var(--zh); }
+  .deploy { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1.5px solid var(--live); border-radius: 4px; color: var(--live); font: 700 15px/1 var(--num); letter-spacing: .06em; }
+  .deploy svg { width: 14px; height: 14px; }
+  .timer { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; align-items: end; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); }
+  .timer span { color: var(--ink-3); font-size: 12px; }
+  .timer strong { font: 600 34px/1 var(--num); }
+  .timer strong small { font-size: 15px; color: var(--ink-3); margin-left: 3px; }
+  .timer .set { grid-row: 1 / 3; grid-column: 2; display: flex; gap: 6px; }
+  .timer input { width: 64px; height: 38px; border: 1px solid var(--rule-strong); border-radius: 4px; background: var(--sheet); font: 600 16px/1 var(--num); text-align: center; color: var(--ink); }
+  .timer button { height: 38px; padding: 0 12px; border: 1px solid var(--ink); border-radius: 4px; background: var(--ink); color: var(--paper); font: 600 13.5px/1 var(--zh); }
+  .force { display: grid; grid-template-columns: 1fr 1.25fr; gap: 8px; }
+  .force button { height: 50px; border-radius: 4px; font: 700 14.5px/1.15 var(--zh); }
+  .force .arm { border: 1.5px solid var(--danger); background: transparent; color: var(--danger); display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .force .fire { border: 0; background: repeating-linear-gradient(-45deg, #d9dcd6 0 8px, #cfd3cc 8px 16px); color: #8a918b; font-family: var(--num); letter-spacing: .05em; }
+  .cmd .note { font-size: 12px; color: var(--ink-3); }
+  .cmd .note b { color: var(--ink-2); font-weight: 500; }
+
+  .status { grid-column: 2 / 4; display: flex; align-items: center; gap: 26px; padding: 0 22px; border-top: 1px solid var(--rule); background: var(--paper-2); font-size: 12.5px; color: var(--ink-2); }
+  .status b { color: var(--ink); font: 600 13px/1 var(--num); margin-left: 6px; }
+  .status .demo { margin-left: auto; color: var(--magenta); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="mark">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true"><circle cx="15" cy="15" r="13" stroke="#eef3fa" stroke-width="1.5"/><path d="M15 5 L19 21 L15 18 L11 21 Z" fill="#eef3fa"/></svg>
+      <div>地面站<small>遙測接收與指令</small></div>
+    </div>
+    <section class="session">
+      <div class="lbl">目前場次 · 記錄中</div>
+      <h1>7/21 半雙工穩定測試</h1>
+      <div class="run">RUN 81012096</div>
+    </section>
+    <section class="link">
+      <div class="state"><i></i>接收中</div>
+      <dl>
+        <dt>最後封包</dt><dd>0.6 s 前</dd>
+        <dt>接收頻率</dt><dd>0.55 Hz</dd>
+        <dt>遺失 / CRC</dt><dd>2 / 0</dd>
+        <dt>儲存</dt><dd>正常</dd>
+      </dl>
+    </section>
+    <button class="stop">停止監控</button>
+    <div class="conn">
+      <div>序列埠 <b>COM9 · 9,600</b></div>
+      <div>協定 <b>v2 · 63 B</b></div>
+      <a href="#">姿態軸向設定</a>
+    </div>
+  </aside>
+
+  <main class="center">
+    <section class="readout">
+      <div class="alt">
+        <div class="ladder" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><i class="pin"></i></div>
+        <div>
+          <h2>相對高度</h2>
+          <div class="value"><strong>612.4</strong><span>m</span></div>
+          <div class="trend"><span><b class="up">↑ +38.6</b>m/s 垂直速度</span><span><b>T+14.2</b>s 空中端時間</span></div>
+        </div>
+      </div>
+      <div class="side-read">
+        <div><span>總加速度</span><b>2.31<small>g</small></b></div>
+        <div><span>地面速度</span><b>6.2<small>m/s</small></b></div>
+        <div><span>氣壓</span><b>941.3<small>hPa</small></b></div>
+        <div><span>溫度</span><b>26.8<small>°C</small></b></div>
+      </div>
+    </section>
+
+    <section class="profile">
+      <header><h2>高度剖面</h2><p>最高 <b>612.4 m</b> · 依空中端時間繪製 · 最近 100 筆</p></header>
+      <svg viewBox="0 0 860 300" preserveAspectRatio="none" aria-label="高度剖面">
+        <rect x="40" y="0" width="820" height="45" fill="var(--t5)" opacity=".42"/>
+        <rect x="40" y="45" width="820" height="45" fill="var(--t4)" opacity=".42"/>
+        <rect x="40" y="90" width="820" height="45" fill="var(--t3)" opacity=".42"/>
+        <rect x="40" y="135" width="820" height="45" fill="var(--t2)" opacity=".42"/>
+        <rect x="40" y="180" width="820" height="45" fill="var(--t1)" opacity=".42"/>
+        <rect x="40" y="225" width="820" height="50" fill="var(--t0)" opacity=".42"/>
+        <g font-family="Barlow" font-size="12" fill="#6b778a" text-anchor="end">
+          <text x="32" y="10">1000</text><text x="32" y="94">750</text><text x="32" y="184">400</text><text x="32" y="274">0</text>
+        </g>
+        <g font-family="Barlow" font-size="12" fill="#6b778a" text-anchor="middle">
+          <text x="40" y="294">T−4 s</text><text x="300" y="294">T+0</text><text x="560" y="294">T+8</text><text x="820" y="294">T+14</text>
+        </g>
+        <line x1="300" y1="0" x2="300" y2="275" stroke="#0f1b2d" stroke-width="1" stroke-dasharray="3 4"/>
+        <text x="306" y="14" font-family="Noto Sans TC" font-size="12" fill="#435168">點火</text>
+        <path d="M40 274 L120 274 L200 274 L300 273 L340 266 L380 250 L430 226 L480 198 L530 170 L580 146 L630 128 L680 112 L730 100 L780 92 L820 88" fill="none" stroke="#a3166f" stroke-width="3" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+        <g fill="#a3166f"><circle cx="340" cy="266" r="3.5"/><circle cx="430" cy="226" r="3.5"/><circle cx="530" cy="170" r="3.5"/><circle cx="630" cy="128" r="3.5"/><circle cx="730" cy="100" r="3.5"/><circle cx="820" cy="88" r="5"/></g>
+        <path d="M630 128 L680 112" stroke="#f6f8f4" stroke-width="0"/>
+        <text x="780" y="76" font-family="Barlow" font-size="13" font-weight="600" fill="#a3166f">612.4 m</text>
+      </svg>
+    </section>
+
+    <section class="lower">
+      <div class="att">
+        <h2>估算姿態 <small>Yaw 為相對航向</small></h2>
+        <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
+          <circle cx="56" cy="56" r="52" fill="#f6f8f4" stroke="#9eaaa0"/>
+          <g stroke="#c6cec5"><line x1="4" y1="56" x2="108" y2="56"/><line x1="56" y1="4" x2="56" y2="108"/></g>
+          <circle cx="56" cy="56" r="32" fill="none" stroke="#c6cec5" stroke-dasharray="2 4"/>
+          <g transform="rotate(-6 56 56)">
+            <path d="M56 18 C50 26 49 36 50 48 H62 C63 36 62 26 56 18 Z" fill="#0f1b2d"/>
+            <rect x="50" y="48" width="12" height="34" rx="2" fill="#435168"/>
+            <path d="M50 70 L42 86 L50 82 Z M62 70 L70 86 L62 82 Z" fill="#a3166f"/>
+          </g>
+        </svg>
+        <dl>
+          <div><dt>滾轉</dt><dd>−6.2°</dd></div>
+          <div><dt>俯仰</dt><dd>84.1°</dd></div>
+          <div><dt>偏航（相對）</dt><dd>12.7°</dd></div>
+        </dl>
+      </div>
+      <div class="table">
+        <h2>全部遙測 <small>13 項 · 封包 #1286</small></h2>
+        <table>
+          <tr><td class="k">加速度 X</td><td class="n">3.12</td><td class="u">m/s²</td><td class="k">角速度 X</td><td class="n">−4.8</td><td class="u">°/s</td><td class="k">經度</td><td class="n">120.895612</td><td class="u">°</td></tr>
+          <tr><td class="k">加速度 Y</td><td class="n">−1.04</td><td class="u">m/s²</td><td class="k">角速度 Y</td><td class="n">2.1</td><td class="u">°/s</td><td class="k">緯度</td><td class="n">22.341702</td><td class="u">°</td></tr>
+          <tr><td class="k">加速度 Z</td><td class="n">22.41</td><td class="u">m/s²</td><td class="k">角速度 Z</td><td class="n">31.6</td><td class="u">°/s</td><td class="k">相對高度</td><td class="n">612.40</td><td class="u">m</td></tr>
+          <tr><td class="k">氣壓</td><td class="n">941.3</td><td class="u">hPa</td><td class="k">溫度</td><td class="n">26.8</td><td class="u">°C</td><td class="k">垂直速度</td><td class="n">38.6</td><td class="u">m/s</td></tr>
+          <tr><td class="k">地面速度</td><td class="n">6.2</td><td class="u">m/s</td><td class="k">剩餘時間</td><td class="n">11</td><td class="u">s</td><td class="k">空中 Session</td><td class="n">0xB9F0B7F6</td><td class="u"></td></tr>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <aside class="right">
+    <section class="map">
+      <svg viewBox="0 0 372 470" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <rect width="372" height="470" fill="#dbe8f2"/>
+        <path d="M0 0 H250 C232 70 248 130 226 190 C206 250 232 330 208 400 C198 430 204 470 204 470 H0 Z" fill="#e8edd9"/>
+        <g fill="none" stroke="#c9bf96" stroke-width="1"><path d="M0 60 C80 80 150 50 210 90"/><path d="M0 130 C70 150 140 120 200 160"/><path d="M0 210 C60 230 130 200 190 240"/><path d="M0 300 C70 320 120 290 190 330"/></g>
+        <path d="M40 470 L60 420 L90 390" stroke="#9eaaa0" stroke-width="2" fill="none"/>
+        <circle cx="118" cy="300" r="7" fill="none" stroke="#0f1b2d" stroke-width="2"/><circle cx="118" cy="300" r="2" fill="#0f1b2d"/>
+        <text x="130" y="318" font-family="Noto Sans TC" font-size="12" fill="#0f1b2d">地面站</text>
+        <path d="M118 300 C128 280 138 262 146 240 C152 222 160 206 168 192" stroke="#a3166f" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M118 300 L168 192" stroke="#a3166f" stroke-width="1" stroke-dasharray="4 4" opacity=".6"/>
+        <circle cx="168" cy="192" r="9" fill="#a3166f" stroke="#f6f8f4" stroke-width="2.5"/>
+      </svg>
+      <div class="tag"><h2>GPS 位置</h2><p>定位有效 · 更新 14:32:07 · 軌跡 38 點</p></div>
+      <div class="recover">
+        <div><span>距地面站</span><b>128 m</b></div>
+        <div><span>方位</span><b>24° 北偏東</b></div>
+        <div><span>地速</span><b>6.2 m/s</b></div>
+      </div>
+    </section>
+    <section class="cmd">
+      <div class="top"><h2>飛行控制</h2><span class="deploy"><svg viewBox="0 0 14 14"><path d="M7 1 L12 3 V7 C12 10 9.5 12 7 13 C4.5 12 2 10 2 7 V3 Z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>SAFE</span></div>
+      <div class="timer">
+        <span>空中端倒數剩餘</span>
+        <strong>11<small>s</small></strong>
+        <div class="set"><input value="30" aria-label="倒數秒數"><button>覆蓋倒數</button></div>
+      </div>
+      <div class="force">
+        <button class="arm"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 7 V5 a3 3 0 0 1 6 0 V7" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>解除安全鎖</button>
+        <button class="fire" disabled>FORCE RELEASE</button>
+      </div>
+      <p class="note">最近一次指令 <b>SET_TIMER #14 · 已確認 · 第 1 次傳送</b></p>
+    </section>
+  </aside>
+
+  <footer class="status">
+    <span>封包<b>1,286</b></span><span>解析失敗<b>0.2%</b></span><span>CRC 錯誤<b>0</b></span><span>最長失聯<b>2.1 s</b></span><span>重啟<b>0</b></span><span>運行時間<b>00:38:12</b></span>
+    <span class="demo">示範資料</span>
+  </footer>
+</div>
+</body>
+</html>

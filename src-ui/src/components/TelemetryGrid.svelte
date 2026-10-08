@@ -1,218 +1,185 @@
 <script lang="ts">
   import { store } from '@/lib/stores.svelte';
+  import { formatUptime, ladderFraction, niceAltitudeCeiling, TINT_BANDS } from '@/lib/flight-display.js';
   import type { TelemetryPayload } from '@/lib/types';
 
   let telemetry: TelemetryPayload = $derived(store.telemetry);
-  let connected = $derived(store.connected);
-  let accelerationMagnitude = $derived(Math.sqrt(
+  let hasTelemetry = $derived(store.telemetryRevision > 0);
+  let peak = $derived(store.peakAltitude);
+  let ceiling = $derived(niceAltitudeCeiling(Math.max(peak ?? 0, telemetry.altitude)));
+  let pinFraction = $derived(ladderFraction(telemetry.altitude, ceiling));
+  let accelerationG = $derived(Math.sqrt(
     telemetry.xAcceleration ** 2
     + telemetry.yAcceleration ** 2
     + telemetry.zAcceleration ** 2,
-  ));
+  ) / 9.80665);
+  let climbing = $derived(telemetry.verticalVelocity >= 0);
 
-  interface TelemetryField {
-    key: keyof TelemetryPayload;
-    label: string;
-    unit: string;
-    category: 'imu' | 'gps' | 'env';
-    precision?: number;
-    warnThreshold?: number;
-    critThreshold?: number;
-    icon: string;
-  }
+  const bands = Array.from({ length: TINT_BANDS }, (_, index) => TINT_BANDS - 1 - index);
 
-  const fields: TelemetryField[] = [
-    { key: 'xAcceleration', label: 'X 軸加速度', unit: 'm/s²', category: 'imu', precision: 2, warnThreshold: 20, critThreshold: 50, icon: 'AX' },
-    { key: 'yAcceleration', label: 'Y 軸加速度', unit: 'm/s²', category: 'imu', precision: 2, warnThreshold: 20, critThreshold: 50, icon: 'AY' },
-    { key: 'zAcceleration', label: 'Z 軸加速度', unit: 'm/s²', category: 'imu', precision: 2, warnThreshold: 20, critThreshold: 50, icon: 'AZ' },
-    { key: 'xAngularVelocity', label: 'X 軸角速度', unit: 'deg/s', category: 'imu', precision: 2, warnThreshold: 200, critThreshold: 500, icon: 'GX' },
-    { key: 'yAngularVelocity', label: 'Y 軸角速度', unit: 'deg/s', category: 'imu', precision: 2, warnThreshold: 200, critThreshold: 500, icon: 'GY' },
-    { key: 'zAngularVelocity', label: 'Z 軸角速度', unit: 'deg/s', category: 'imu', precision: 2, warnThreshold: 200, critThreshold: 500, icon: 'GZ' },
-    { key: 'longitude', label: '經度', unit: 'deg', category: 'gps', precision: 6, icon: 'LON' },
-    { key: 'latitude', label: '緯度', unit: 'deg', category: 'gps', precision: 6, icon: 'LAT' },
-    { key: 'altitude', label: '相對高度', unit: 'm', category: 'gps', precision: 2, warnThreshold: 1000, critThreshold: 3000, icon: 'ALT' },
-    { key: 'groundSpeed', label: '地面速度', unit: 'm/s', category: 'gps', precision: 2, warnThreshold: 100, critThreshold: 300, icon: 'GS' },
-    { key: 'verticalVelocity', label: '垂直速度', unit: 'm/s', category: 'gps', precision: 2, warnThreshold: 50, critThreshold: 200, icon: 'VV' },
-    { key: 'airPressure', label: '氣壓', unit: 'hPa', category: 'env', precision: 1, icon: 'P' },
-    { key: 'temperature', label: '溫度', unit: '°C', category: 'env', precision: 1, warnThreshold: 50, critThreshold: 80, icon: 'T' },
-  ];
-
-  const categories = [
-    { id: 'imu', label: 'IMU 感測器' },
-    { id: 'gps', label: '飛行與定位' },
-    { id: 'env', label: '環境感測' },
-  ] as const;
-
-  function getLevel(field: TelemetryField, value: number): 'normal' | 'warn' | 'crit' {
-    const abs = Math.abs(value);
-    if (field.critThreshold && abs >= field.critThreshold) return 'crit';
-    if (field.warnThreshold && abs >= field.warnThreshold) return 'warn';
-    return 'normal';
-  }
-
-  function formatValue(value: number, precision = 2): string {
-    return Number.isFinite(value) ? value.toFixed(precision) : '--';
+  function formatValue(value: number, precision = 1): string {
+    return hasTelemetry && Number.isFinite(value) ? value.toFixed(precision) : '--';
   }
 </script>
 
-<section class="primary-telemetry">
-  <header class="telemetry-header">
-    <div>
-      <span class="section-kicker">主要飛行數據</span>
-      <h2>相對高度</h2>
-    </div>
-    <span class:active={connected} class="live-state"><i aria-hidden="true"></i>{connected ? 'LIVE' : 'WAITING'}</span>
-  </header>
-
-  <div class="hero-reading">
-    <span class="reading-label">ALTITUDE ABOVE GROUND</span>
-    <div class="reading-value">
-      <strong>{formatValue(telemetry.altitude, 1)}</strong><span>m</span>
-    </div>
-    <div class:descending={telemetry.verticalVelocity < 0} class="vertical-trend">
-      <i aria-hidden="true"></i>{telemetry.verticalVelocity >= 0 ? '+' : ''}{formatValue(telemetry.verticalVelocity, 1)} m/s 垂直速度
-    </div>
-  </div>
-
-  <div class="metric-strip">
-    <div><span>氣壓</span><strong>{formatValue(telemetry.airPressure, 1)}</strong><small>hPa</small></div>
-    <div><span>溫度</span><strong>{formatValue(telemetry.temperature, 1)}</strong><small>°C</small></div>
-    <div><span>總加速度</span><strong>{formatValue(accelerationMagnitude / 9.80665, 2)}</strong><small>g</small></div>
-    <div><span>地面速度</span><strong>{formatValue(telemetry.groundSpeed, 1)}</strong><small>m/s</small></div>
-  </div>
-
-  <details class="sensor-details">
-    <summary>查看全部 13 項遙測</summary>
-    <div class="telemetry-grid">
-      {#each categories as cat}
-        <section class="category-section">
-          <h3>{cat.label}</h3>
-          <div class="fields-grid">
-            {#each fields.filter((field) => field.category === cat.id) as field}
-              {@const value = telemetry[field.key] as number}
-              {@const level = getLevel(field, value)}
-              <article class:warn={level === 'warn'} class:crit={level === 'crit'} class="field-row">
-                <span class="field-icon mono">{field.icon}</span>
-                <span class="field-label">{field.label}</span>
-                <strong class="mono">{formatValue(value, field.precision)}</strong>
-                <small>{field.unit}</small>
-              </article>
-            {/each}
-          </div>
-        </section>
+<section class="readout" aria-label="主要飛行數據">
+  <div class="altitude">
+    <div class="ladder" aria-hidden="true">
+      {#each bands as band}
+        <span style:background="var(--t{band})"></span>
       {/each}
+      {#if hasTelemetry}
+        <i class="pin" style:bottom="{pinFraction * 100}%"></i>
+      {/if}
     </div>
-  </details>
+    <div class="ladder-scale num" aria-hidden="true">
+      {#each bands as band}
+        <span>{Math.round((ceiling / TINT_BANDS) * (band + 1))}</span>
+      {/each}
+      <span>0</span>
+    </div>
+
+    <div class="altitude-copy">
+      <h2>相對高度</h2>
+      <p class="value num"><strong>{formatValue(telemetry.altitude)}</strong><span>m</span></p>
+      <div class="trend">
+        <span class:climbing class:descending={!climbing && hasTelemetry}>
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <path d={climbing ? 'M7 12V2M2.5 6.5 7 2l4.5 4.5' : 'M7 2v10M2.5 7.5 7 12l4.5-4.5'} fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <b class="num">{hasTelemetry && climbing ? '+' : ''}{formatValue(telemetry.verticalVelocity)}</b>
+          m/s 垂直速度
+        </span>
+        <span><b class="num">{peak === null ? '--' : peak.toFixed(1)}</b> m 本場最高</span>
+        <span><b class="num">{hasTelemetry ? formatUptime(telemetry.uptimeMs) : '--'}</b> 空中端時間</span>
+      </div>
+    </div>
+  </div>
+
+  <dl class="secondary">
+    <div><dt>總加速度</dt><dd class="num">{formatValue(accelerationG, 2)}<small>g</small></dd></div>
+    <div><dt>地面速度</dt><dd class="num">{formatValue(telemetry.groundSpeed)}<small>m/s</small></dd></div>
+    <div><dt>氣壓</dt><dd class="num">{formatValue(telemetry.airPressure)}<small>hPa</small></dd></div>
+    <div><dt>溫度</dt><dd class="num">{formatValue(telemetry.temperature)}<small>°C</small></dd></div>
+  </dl>
 </section>
 
 <style>
-  .primary-telemetry {
-    position: relative;
-    overflow: hidden;
-    padding: 20px 24px 18px;
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    box-shadow: var(--glass-shadow);
+  .readout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(200px, 22vw, 300px);
+    border-bottom: 1px solid var(--rule);
   }
 
-  .primary-telemetry::after {
+  .altitude {
+    display: grid;
+    grid-template-columns: 40px auto minmax(0, 1fr);
+    gap: 0 14px;
+    padding: clamp(16px, 2.6vh, 26px) clamp(18px, 2vw, 28px);
+  }
+
+  .ladder {
+    position: relative;
+    display: grid;
+    grid-template-rows: repeat(6, 1fr);
+    min-height: 150px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+  }
+  .ladder span:first-child { border-radius: 2px 2px 0 0; }
+  .ladder span:last-child { border-radius: 0 0 2px 2px; }
+
+  .pin {
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    height: 3px;
+    margin-bottom: -1.5px;
+    background: var(--rocket);
+    transition: bottom 500ms var(--ease-out);
+  }
+  .pin::after {
     content: '';
     position: absolute;
-    right: -130px;
-    bottom: -210px;
-    width: 420px;
-    height: 420px;
-    border: 1px solid rgba(115, 210, 182, .08);
-    border-radius: 50%;
-    box-shadow: 0 0 0 44px rgba(115, 210, 182, .018), 0 0 0 98px rgba(115, 210, 182, .012);
-    pointer-events: none;
+    right: -10px;
+    top: -5.5px;
+    border: 7px solid transparent;
+    border-left: 8px solid var(--rocket);
+    border-right: 0;
   }
 
-  .telemetry-header,
-  .live-state,
-  .reading-value,
-  .vertical-trend {
+  .ladder-scale {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin: -5px 0;
+    padding: 0 0 0 4px;
+    color: var(--ink-3);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .altitude-copy { min-width: 0; padding-left: 6px; }
+  h2 { color: var(--ink-2); font-size: 15px; font-weight: 500; }
+
+  .value { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; }
+  .value strong {
+    font-size: clamp(72px, 8.6vw, 132px);
+    font-weight: 600;
+    line-height: .86;
+    letter-spacing: -.035em;
+  }
+  .value span { color: var(--ink-2); font-size: clamp(20px, 1.8vw, 28px); font-weight: 600; }
+
+  .trend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 22px;
+    margin-top: 16px;
+    color: var(--ink-2);
+    font-size: 13.5px;
+  }
+  .trend span { display: inline-flex; align-items: baseline; gap: 4px; }
+  .trend svg { align-self: center; }
+  .trend b { color: var(--ink); font-size: 20px; font-weight: 600; line-height: 1; }
+  .trend .climbing,
+  .trend .climbing b { color: var(--live); }
+  .trend .descending,
+  .trend .descending b { color: var(--warn); }
+
+  .secondary {
+    display: grid;
+    grid-template-rows: repeat(4, 1fr);
+    border-left: 1px solid var(--rule);
+  }
+  .secondary div {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 clamp(14px, 1.6vw, 22px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .secondary div:last-child { border-bottom: 0; }
+  dt { color: var(--ink-2); font-size: 13.5px; }
+  dd { font-size: clamp(20px, 1.9vw, 27px); font-weight: 600; line-height: 1; white-space: nowrap; }
+  dd small { margin-left: 4px; color: var(--ink-3); font-size: 13px; font-weight: 500; }
+
+  @media (max-width: 1180px) {
+    .readout { grid-template-columns: 1fr; }
+    .secondary { grid-template-columns: repeat(4, 1fr); grid-template-rows: none; border-left: 0; border-top: 1px solid var(--rule); }
+    .secondary div { flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; padding: 12px 18px; border-bottom: 0; border-right: 1px solid var(--rule); }
+    .secondary div:last-child { border-right: 0; }
   }
 
-  .telemetry-header { justify-content: space-between; gap: 16px; }
-  .section-kicker { color: var(--text-secondary); font-size: 10px; letter-spacing: .08em; }
-  h2 { margin-top: 4px; font-size: 13px; font-weight: 590; letter-spacing: .04em; }
-
-  .live-state { gap: 7px; color: var(--text-tertiary); font: 10px/1 var(--font-mono); }
-  .live-state i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-  .live-state.active { color: var(--accent-cyan); }
-
-  .hero-reading { position: relative; z-index: 1; padding: clamp(22px, 4vh, 42px) 0 28px; }
-  .reading-label { color: var(--text-secondary); font-size: 10px; letter-spacing: .08em; }
-  .reading-value { gap: 14px; margin-top: 4px; }
-  .reading-value strong {
-    color: var(--text-primary);
-    font: 500 clamp(68px, 8vw, 116px)/.9 var(--font-sans);
-    letter-spacing: -.075em;
-  }
-  .reading-value span { color: var(--accent-cyan); font: 500 18px/1 var(--font-mono); }
-
-  .vertical-trend { gap: 8px; margin-top: 14px; color: var(--accent-cyan); font: 11px/1.2 var(--font-mono); }
-  .vertical-trend i {
-    width: 8px;
-    height: 8px;
-    border-top: 2px solid currentColor;
-    border-right: 2px solid currentColor;
-    transform: rotate(-45deg);
-  }
-  .vertical-trend.descending { color: var(--accent-orange); }
-  .vertical-trend.descending i { transform: rotate(135deg); }
-
-  .metric-strip {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1px;
-    overflow: hidden;
-    border: 1px solid var(--border-muted);
-    border-radius: var(--radius-md);
-    background: var(--border-muted);
-  }
-  .metric-strip > div { min-width: 0; padding: 13px 14px; background: rgba(7, 16, 22, .78); }
-  .metric-strip span { display: block; color: var(--text-secondary); font-size: 9px; }
-  .metric-strip strong { display: inline-block; margin-top: 6px; font: 500 17px/1.2 var(--font-mono); }
-  .metric-strip small { margin-left: 5px; color: var(--text-tertiary); font-size: 9px; }
-
-  .sensor-details { position: relative; z-index: 1; margin-top: 14px; }
-  .sensor-details summary { color: var(--text-secondary); cursor: pointer; font-size: 10px; }
-  .telemetry-grid { display: grid; grid-template-columns: 1.2fr 1fr .7fr; gap: 16px; margin-top: 14px; }
-  .category-section h3 { margin-bottom: 8px; color: var(--text-secondary); font-size: 9px; font-weight: 600; letter-spacing: .08em; }
-  .fields-grid { display: grid; gap: 1px; background: var(--border-muted); }
-  .field-row {
-    display: grid;
-    grid-template-columns: 28px minmax(75px, 1fr) auto auto;
-    align-items: baseline;
-    gap: 7px;
-    padding: 7px 8px;
-    background: #0b171e;
-  }
-  .field-icon { color: var(--text-tertiary); font-size: 8px; }
-  .field-label { color: var(--text-secondary); font-size: 9px; }
-  .field-row strong { font-size: 10px; }
-  .field-row small { color: var(--text-tertiary); font-size: 8px; }
-  .field-row.warn strong { color: var(--accent-orange); }
-  .field-row.crit strong { color: var(--accent-red); }
-
-  @media (max-width: 900px) {
-    .metric-strip { grid-template-columns: 1fr 1fr; }
-    .telemetry-grid { grid-template-columns: 1fr; }
+  @media (max-width: 560px) {
+    .secondary { grid-template-columns: repeat(2, 1fr); }
   }
 
-  @media (max-height: 900px) and (min-width: 1241px) {
-    .primary-telemetry { padding: 16px 20px; }
-    .hero-reading { padding: 16px 0 18px; }
-    .reading-value strong { font-size: clamp(64px, 9vh, 78px); }
-    .vertical-trend { margin-top: 10px; }
-    .metric-strip > div { padding: 10px 12px; }
-    .sensor-details { margin-top: 10px; }
+  @media (max-height: 820px) and (min-width: 1181px) {
+    .ladder { min-height: 128px; }
+    .value strong { font-size: clamp(64px, 7.4vw, 104px); }
+    .trend { margin-top: 12px; }
   }
 </style>

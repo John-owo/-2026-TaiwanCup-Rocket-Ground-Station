@@ -56,6 +56,8 @@ function createStore() {
   const storage = typeof localStorage === 'undefined' ? undefined : localStorage;
   let telemetry = $state<TelemetryPayload>(createDefaultTelemetry());
   let telemetryRevision = $state(0);
+  let peakAltitude = $state<number | null>(null);
+  let demoMode = $state(false);
   let history = $state<TelemetryPayload[]>([]);
   let stats = $state<PacketStats>({ totalPackets: 0, failedPackets: 0, packetsPerSecond: 0 });
   let connected = $state(false);
@@ -107,6 +109,8 @@ function createStore() {
   return {
     get telemetry() { return telemetry; },
     get telemetryRevision() { return telemetryRevision; },
+    get peakAltitude() { return peakAltitude; },
+    get demoMode() { return demoMode; },
     get history() { return history; },
     get stats() { return stats; },
     get connected() { return connected; },
@@ -158,6 +162,13 @@ function createStore() {
       history = [...history, { ...payload }].slice(-MAX_HISTORY);
       telemetryRevision += 1;
       lastPacketAt = Date.now();
+      if (Number.isFinite(payload.altitude)) {
+        peakAltitude = peakAltitude === null ? payload.altitude : Math.max(peakAltitude, payload.altitude);
+      }
+    },
+
+    setDemoMode(value: boolean) {
+      demoMode = value;
     },
 
     updateAirborneSession(change: AirborneSessionChange) {
@@ -198,6 +209,7 @@ function createStore() {
       if (nextConnected && !connected) {
         stats = { totalPackets: 0, failedPackets: 0, packetsPerSecond: 0 };
         lastPacketAt = null;
+        peakAltitude = null;
         commandStatus = null;
         airborneSessionChange = null;
       }
@@ -235,6 +247,7 @@ function createStore() {
     reset() {
       telemetry = createDefaultTelemetry();
       telemetryRevision = 0;
+      peakAltitude = null;
       history = [];
       stats = { totalPackets: 0, failedPackets: 0, packetsPerSecond: 0 };
       connected = false;

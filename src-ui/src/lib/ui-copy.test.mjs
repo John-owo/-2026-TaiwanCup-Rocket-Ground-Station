@@ -29,14 +29,14 @@ test('monitoring UI uses Traditional Chinese labels', () => {
     '垂直速度',
     '等待遙測資料',
     '開始監控',
-    '中斷連線',
+    '停止監控',
     '相對高度',
   ]) {
     assert.equal(text.includes(label), true, label);
   }
 });
 
-test('app keeps telemetry and compact attitude in the center column', () => {
+test('app keeps telemetry, profile and attitude in the center column', () => {
   const app = read('../App.svelte');
   assert.match(app, /<main class="center-area">[\s\S]*<TelemetryGrid \/>[\s\S]*<TelemetryCharts \/>[\s\S]*<AttitudeIndicator \/>/u);
 });

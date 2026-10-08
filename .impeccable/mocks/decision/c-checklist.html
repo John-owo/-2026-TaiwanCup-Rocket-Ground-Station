@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>方向 C · 飛行檢查手冊</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ground: #e7ecef;
+    --card: #f8fafb;
+    --ink: #14202b;
+    --ink-2: #4b5966;
+    --ink-3: #7a8793;
+    --rule: #cdd5db;
+    --tab-link: #2457a6;
+    --tab-run: #1e7a52;
+    --tab-mon: #6a3fa0;
+    --tab-cmd: #b4232a;
+    --num: "Atkinson Hyperlegible", "Noto Sans TC", sans-serif;
+    --zh: "Noto Sans TC", "Atkinson Hyperlegible", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  ::selection { background: var(--tab-mon); color: #fff; }
+  body { width: 1440px; height: 900px; overflow: hidden; background: var(--ground); color: var(--ink); font: 14px/1.45 var(--zh); font-variant-numeric: tabular-nums; }
+  .app { display: grid; grid-template-columns: 236px minmax(0, 1fr) 380px; grid-template-rows: 1fr 30px; height: 100%; gap: 0; }
+
+  .steps { grid-row: 1 / 3; background: var(--ink); color: #e8edf1; padding: 22px 0 18px; display: flex; flex-direction: column; }
+  .steps .mark { padding: 0 22px 18px; font: 700 16px/1.2 var(--zh); border-bottom: 1px solid #2c3a47; }
+  .steps .mark small { display: block; margin-top: 4px; font: 400 12px/1 var(--zh); color: #9fb0bf; }
+  .steps ol { list-style: none; margin-top: 10px; }
+  .steps li { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 10px; padding: 13px 22px; color: #9fb0bf; }
+  .steps li .n { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid currentColor; display: grid; place-items: center; font: 700 13px/1 var(--num); }
+  .steps li b { display: block; font: 700 15px/1.2 var(--zh); color: #e8edf1; }
+  .steps li small { font-size: 12px; }
+  .steps li.done .n { background: currentColor; }
+  .steps li.done .n svg { color: var(--ink); }
+  .steps li.done:nth-child(1) { color: #8db4ef; }
+  .steps li.done:nth-child(2) { color: #7fd1a9; }
+  .steps li.now { background: #1f2c38; color: #c8b0ec; box-shadow: inset 4px 0 0 #c8b0ec; }
+  .steps li.now .n { background: #c8b0ec; color: var(--ink); border-color: #c8b0ec; }
+  .steps .foot { margin-top: auto; padding: 0 22px; display: grid; gap: 10px; }
+  .steps .foot button { height: 44px; border: 1.5px solid #e8edf1; border-radius: 8px; background: transparent; color: #e8edf1; font: 700 15px/1 var(--zh); }
+  .steps .foot p { font-size: 12.5px; color: #9fb0bf; }
+  .steps .foot p b { color: #e8edf1; font: 700 13px/1 var(--num); }
+
+  .main { display: grid; grid-template-rows: auto 1fr 220px; gap: 14px; padding: 16px; min-width: 0; min-height: 0; }
+  .sheet { position: relative; background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 20px; min-height: 0; min-width: 0; overflow: hidden; }
+  .sheet .tab { position: absolute; top: -1px; right: 20px; padding: 4px 10px 5px; border-radius: 0 0 6px 6px; color: #fff; font: 700 12px/1 var(--zh); }
+  .sheet h2 { font: 700 16px/1.2 var(--zh); }
+  .sheet h2 small { font: 400 12.5px/1 var(--zh); color: var(--ink-3); margin-left: 8px; }
+  .mon .tab { background: var(--tab-mon); }
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) repeat(4, minmax(0, 128px)); align-items: end; gap: 0; }
+  .hero .alt span { color: var(--ink-2); font-size: 14px; }
+  .hero .alt strong { display: block; font: 700 92px/.9 var(--num); letter-spacing: -.03em; margin-top: 8px; }
+  .hero .alt strong small { font-size: 26px; color: var(--ink-2); margin-left: 6px; letter-spacing: 0; }
+  .hero .alt p { margin-top: 10px; font-size: 14px; color: var(--ink-2); }
+  .hero .alt p b { font: 700 18px/1 var(--num); color: var(--tab-run); margin-right: 4px; }
+  .hero .m { padding: 0 16px 6px; border-left: 1px solid var(--rule); }
+  .hero .m span { display: block; font-size: 12.5px; color: var(--ink-2); }
+  .hero .m b { font: 700 26px/1.1 var(--num); }
+  .hero .m b small { font: 400 13px/1 var(--num); color: var(--ink-3); margin-left: 3px; }
+  .chart svg { width: 100%; height: calc(100% - 26px); margin-top: 8px; }
+  .row { display: grid; grid-template-columns: 300px 1fr; gap: 14px; min-height: 0; }
+  .att .angles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+  .att .angles span { font-size: 12px; color: var(--ink-2); display: block; }
+  .att .angles b { font: 700 26px/1.1 var(--num); }
+  .att p { margin-top: 14px; font-size: 12px; color: var(--ink-3); }
+  .tele table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+  .tele td { padding: 5px 0; border-bottom: 1px solid var(--rule); }
+  .tele td.n { text-align: right; font: 700 14px/1 var(--num); padding-right: 6px; }
+  .tele td.u { color: var(--ink-3); width: 44px; font-size: 12px; }
+  .tele td.k { color: var(--ink-2); padding-left: 16px; white-space: nowrap; }
+  .tele td.k:first-child { padding-left: 0; }
+
+  .right { display: grid; grid-template-rows: auto 1fr; gap: 14px; padding: 16px 16px 16px 0; min-height: 0; }
+  .cmd .tab { background: var(--tab-cmd); }
+  .cmd { display: grid; gap: 12px; }
+  .cmd .state { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+  .cmd .state span { font: 700 15px/1 var(--num); color: var(--tab-run); border: 1.5px solid var(--tab-run); border-radius: 6px; padding: 5px 10px; }
+  .cmd ol { list-style: none; display: grid; gap: 8px; counter-reset: c; }
+  .cmd li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; font-size: 13.5px; }
+  .cmd li::before { counter-increment: c; content: counter(c); width: 22px; height: 22px; border-radius: 50%; background: var(--ground); display: grid; place-items: center; font: 700 12px/1 var(--num); }
+  .cmd .set { display: grid; grid-template-columns: 80px 1fr; gap: 8px; margin-top: 6px; }
+  .cmd input { height: 38px; border: 1px solid var(--rule); border-radius: 6px; text-align: center; font: 700 16px/1 var(--num); background: #fff; }
+  .cmd .set button { height: 38px; border: 0; border-radius: 6px; background: var(--ink); color: #fff; font: 700 13.5px/1 var(--zh); }
+  .cmd .force { display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px; margin-top: 6px; }
+  .cmd .force button { height: 48px; border-radius: 8px; font: 700 14px/1 var(--zh); }
+  .cmd .force .arm { border: 1.5px solid var(--tab-cmd); background: #fff; color: var(--tab-cmd); }
+  .cmd .force .fire { border: 1.5px dashed var(--rule); background: transparent; color: var(--ink-3); font-family: var(--num); }
+  .gps .tab { background: var(--tab-link); }
+  .gps { display: grid; grid-template-rows: auto 1fr auto; padding-bottom: 12px; }
+  .gps .map { position: relative; margin: 12px -20px 0; overflow: hidden; border-block: 1px solid var(--rule); }
+  .gps svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .gps dl { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 10px; }
+  .gps dt { font-size: 12px; color: var(--ink-2); }
+  .gps dd { font: 700 17px/1.2 var(--num); }
+
+  .status { grid-column: 2 / 4; display: flex; align-items: center; gap: 26px; padding: 0 18px; font-size: 12px; color: var(--ink-2); border-top: 1px solid var(--rule); background: var(--card); }
+  .status b { color: var(--ink); font: 700 13px/1 var(--num); margin-left: 6px; }
+  .status .demo { margin-left: auto; color: var(--tab-mon); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="steps">
+    <div class="mark">地面站<small>遙測接收與指令</small></div>
+    <ol>
+      <li class="done"><span class="n"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5 L5 9 L10 3" fill="none" stroke="currentColor" stroke-width="2"/></svg></span><div><b>連線</b><small>COM9 · 9,600</small></div></li>
+      <li class="done"><span class="n"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5 L5 9 L10 3" fill="none" stroke="currentColor" stroke-width="2"/></svg></span><div><b>場次</b><small>7/21 半雙工穩定測試</small></div></li>
+      <li class="now"><span class="n">3</span><div><b>監控</b><small>接收中 · 0.6 s 前</small></div></li>
+      <li><span class="n">4</span><div><b>指令</b><small>需即時遙測才可解鎖</small></div></li>
+    </ol>
+    <div class="foot">
+      <p>儲存 <b>正常</b> · 遺失 <b>2</b> · CRC <b>0</b></p>
+      <button>停止監控</button>
+    </div>
+  </nav>
+
+  <main class="main">
+    <section class="sheet mon hero">
+      <span class="tab">3 監控</span>
+      <div class="alt"><span>相對高度</span><strong>612.4<small>m</small></strong><p><b>↑ +38.6</b>m/s 垂直速度 · T+14.2 s</p></div>
+      <div class="m"><span>總加速度</span><b>2.31<small>g</small></b></div>
+      <div class="m"><span>地面速度</span><b>6.2<small>m/s</small></b></div>
+      <div class="m"><span>氣壓</span><b>941.3<small>hPa</small></b></div>
+      <div class="m"><span>溫度</span><b>26.8<small>°C</small></b></div>
+    </section>
+    <section class="sheet mon chart">
+      <h2>高度剖面<small>依空中端時間 · 最高 612.4 m</small></h2>
+      <svg viewBox="0 0 880 240" preserveAspectRatio="none" aria-label="高度剖面">
+        <g stroke="#cdd5db"><line x1="40" y1="20" x2="880" y2="20"/><line x1="40" y1="90" x2="880" y2="90"/><line x1="40" y1="160" x2="880" y2="160"/><line x1="40" y1="220" x2="880" y2="220"/></g>
+        <g font-family="Atkinson Hyperlegible" font-size="12" fill="#7a8793" text-anchor="end"><text x="32" y="24">900</text><text x="32" y="94">600</text><text x="32" y="164">300</text><text x="32" y="224">0</text></g>
+        <path d="M40 219 L300 219 L340 212 L400 192 L460 166 L520 142 L580 122 L640 108 L700 99 L760 94 L820 91 L860 90" fill="none" stroke="#6a3fa0" stroke-width="3" vector-effect="non-scaling-stroke"/>
+        <circle cx="860" cy="90" r="6" fill="#6a3fa0"/>
+      </svg>
+    </section>
+    <div class="row">
+      <section class="sheet mon att"><h2>估算姿態</h2><div class="angles"><div><span>滾轉</span><b>−6.2°</b></div><div><span>俯仰</span><b>84.1°</b></div><div><span>偏航</span><b>12.7°</b></div></div><p>MPU6050 無磁力計，偏航為相對角度。</p></section>
+      <section class="sheet mon tele"><h2>全部遙測<small>13 項 · 封包 #1286</small></h2>
+        <table>
+          <tr><td class="k">加速度 X</td><td class="n">3.12</td><td class="u">m/s²</td><td class="k">角速度 X</td><td class="n">−4.8</td><td class="u">°/s</td><td class="k">經度</td><td class="n">120.895612</td><td class="u">°</td></tr>
+          <tr><td class="k">加速度 Y</td><td class="n">−1.04</td><td class="u">m/s²</td><td class="k">角速度 Y</td><td class="n">2.1</td><td class="u">°/s</td><td class="k">緯度</td><td class="n">22.341702</td><td class="u">°</td></tr>
+          <tr><td class="k">加速度 Z</td><td class="n">22.41</td><td class="u">m/s²</td><td class="k">角速度 Z</td><td class="n">31.6</td><td class="u">°/s</td><td class="k">空中 Session</td><td class="n">0xB9F0B7F6</td><td class="u"></td></tr>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <aside class="right">
+    <section class="sheet cmd">
+      <span class="tab">4 指令</span>
+      <div class="state"><h2>飛行控制</h2><span>SAFE</span></div>
+      <ol>
+        <li><div>確認空中端剩餘倒數 <b>11 s</b>，狀態 SAFE</div></li>
+        <li><div>需要時覆蓋倒數秒數<div class="set"><input value="30" aria-label="倒數秒數"><button>覆蓋倒數</button></div></div></li>
+        <li><div>確認清場後，先解鎖再釋放<div class="force"><button class="arm">解除安全鎖</button><button class="fire" disabled>FORCE RELEASE</button></div></div></li>
+      </ol>
+    </section>
+    <section class="sheet gps">
+      <span class="tab">定位</span>
+      <h2>GPS 位置<small>定位有效 · 軌跡 38 點</small></h2>
+      <div class="map">
+        <svg viewBox="0 0 364 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <rect width="364" height="300" fill="#dfe6ea"/>
+          <path d="M0 0 H220 C210 60 230 110 210 170 C195 220 215 260 205 300 H0 Z" fill="#eef1e8"/>
+          <circle cx="110" cy="210" r="6" fill="#14202b"/>
+          <text x="120" y="228" font-family="Noto Sans TC" font-size="12" fill="#14202b">地面站</text>
+          <path d="M110 210 C120 190 132 170 142 150 C150 134 158 120 166 110" stroke="#2457a6" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+          <circle cx="166" cy="110" r="8" fill="#2457a6" stroke="#fff" stroke-width="2.5"/>
+        </svg>
+      </div>
+      <dl><div><dt>距地面站</dt><dd>128 m</dd></div><div><dt>方位</dt><dd>24°</dd></div><div><dt>地速</dt><dd>6.2 m/s</dd></div></dl>
+    </section>
+  </aside>
+
+  <footer class="status">
+    <span>封包<b>1,286</b></span><span>解析失敗<b>0.2%</b></span><span>頻率<b>0.55 Hz</b></span><span>最長失聯<b>2.1 s</b></span><span>運行時間<b>00:38:12</b></span>
+    <span class="demo">示範資料</span>
+  </footer>
+</div>
+</body>
+</html>

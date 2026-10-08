@@ -175,48 +175,52 @@
 
 <style>
   .test-session-dialog {
-    width: min(720px, calc(100vw - 32px));
+    width: min(680px, calc(100vw - 32px));
     max-height: calc(100vh - 32px);
+    margin: auto;
     padding: 0;
-    border: 1px solid rgba(115, 210, 182, .24);
-    border-radius: var(--radius-xl);
-    background: #0b171e;
-    color: var(--text-primary);
-    box-shadow: 0 30px 90px rgba(0, 0, 0, .72);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius-lg);
+    background: var(--sheet);
+    color: var(--ink);
+    box-shadow: 0 24px 60px rgba(15, 27, 45, .28);
   }
-  .test-session-dialog::backdrop { background: rgba(2, 8, 12, .86); backdrop-filter: blur(8px); }
-  form { display: grid; gap: var(--sp-3); padding: clamp(20px, 3vw, 32px); overflow-y: auto; }
-  header, footer { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
-  header { margin-bottom: var(--sp-3); padding-bottom: var(--sp-4); border-bottom: 1px solid var(--border-muted); }
-  h2 { font-size: var(--fs-xl); font-weight: 560; letter-spacing: -.025em; }
-  .connection-target { color: var(--text-tertiary); font-size: var(--fs-xs); }
-  .storage-state { color: var(--accent-green); font-size: var(--fs-xs); font-weight: 700; }
-  .storage-state.degraded { color: var(--accent-orange); }
-  .storage-state.failed { color: var(--accent-red); }
+  .test-session-dialog::backdrop { background: rgba(15, 27, 45, .55); }
+  form { display: grid; gap: 10px; padding: clamp(20px, 3vw, 30px); overflow-y: auto; }
+  header, footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  header { margin-bottom: 6px; padding-bottom: 16px; border-bottom: 1px solid var(--rule); }
+  h2 { font-size: 22px; font-weight: 700; }
+  .connection-target { margin-top: 3px; color: var(--ink-3); font-family: var(--font-num); font-size: 13px; font-weight: 500; }
+  .storage-state { color: var(--live); font-size: 13px; font-weight: 700; }
+  .storage-state.degraded { color: var(--warn); }
+  .storage-state.failed { color: var(--danger); }
   .storage-warning, .dialog-error {
-    display: grid; gap: var(--sp-1); padding: var(--sp-3);
-    border: 1px solid var(--accent-orange); border-radius: var(--radius-sm);
-    background: var(--accent-orange-dim); color: var(--accent-orange); font-size: var(--fs-xs);
+    display: grid; gap: 4px; padding: 10px 12px;
+    border: 1px solid var(--warn); border-radius: var(--radius);
+    background: var(--warn-soft); color: var(--warn); font-size: 12.5px;
   }
-  .storage-warning.critical, .dialog-error { border-color: var(--accent-red); background: var(--accent-red-dim); color: var(--accent-red); }
-  label { margin-top: var(--sp-1); color: var(--text-secondary); font-size: var(--fs-xs); letter-spacing: .02em; }
-  label span { color: var(--accent-red); }
+  .storage-warning.critical, .dialog-error { border-color: var(--danger); background: var(--danger-soft); color: var(--danger); }
+  label { margin-top: 4px; color: var(--ink-2); font-size: 13px; }
+  label span { margin-left: 2px; color: var(--danger); }
   input, textarea {
-    width: 100%; padding: 11px 12px; border: 1px solid var(--surface-border);
-    border-radius: var(--radius-sm); background: var(--bg-field); color: var(--text-primary);
+    width: 100%; padding: 9px 11px; border: 1px solid var(--rule-strong);
+    border-radius: var(--radius); background: var(--field); color: var(--ink);
   }
-  input:focus, textarea:focus { border-color: var(--accent-cyan); }
-  textarea { min-height: 72px; resize: vertical; }
-  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
-  .field-grid > div { display: grid; gap: var(--sp-2); }
-  .field-error { color: var(--accent-red); }
-  .unrecorded-confirm { display: flex; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-3); border: 1px solid var(--accent-red); border-radius: var(--radius-sm); }
-  .unrecorded-confirm input { width: auto; margin-top: 2px; }
-  .unrecorded-confirm span { color: var(--text-primary); }
-  footer { margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--border-muted); justify-content: flex-end; }
-  button { min-height: 40px; padding: var(--sp-2) var(--sp-5); border-radius: var(--radius-sm); background: var(--accent-cyan); color: #071016; font-weight: 700; }
-  button.cancel { border: 1px solid var(--surface-border); background: transparent; color: var(--text-primary); }
-  button.danger { background: var(--accent-red); color: white; }
-  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  input[type="number"] { font-family: var(--font-num); font-weight: 600; }
+  input:focus, textarea:focus { border-color: var(--rail); box-shadow: 0 0 0 3px color-mix(in srgb, var(--rail) 18%, transparent); }
+  textarea { min-height: 70px; resize: vertical; }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field-grid > div { display: grid; gap: 6px; }
+  .field-error { color: var(--danger); font-size: 12px; }
+  .unrecorded-confirm { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border: 1px solid var(--danger); border-radius: var(--radius); }
+  .unrecorded-confirm input { width: auto; margin-top: 3px; accent-color: var(--danger); }
+  .unrecorded-confirm span { color: var(--ink); }
+  footer { margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--rule); justify-content: flex-end; }
+  button { min-height: 40px; padding: 0 18px; border-radius: var(--radius); background: var(--rail); color: var(--rail-ink); font-weight: 700; }
+  button:hover:not(:disabled) { background: var(--rail-deep); }
+  button.cancel { border: 1px solid var(--rule-strong); background: transparent; color: var(--ink); }
+  button.cancel:hover:not(:disabled) { background: var(--paper); }
+  button.danger { background: var(--danger); color: #fff; }
+  button:disabled { opacity: .45; }
   @media (max-width: 560px) { .field-grid { grid-template-columns: 1fr; } }
 </style>
